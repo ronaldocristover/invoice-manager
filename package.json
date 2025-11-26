@@ -1,0 +1,30 @@
+{
+  "name": "invoice-manager",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "npm@10.9.3",
+  "description": "Invoice Manager - Full-stack invoice management application",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:frontend": "turbo run dev --filter=invoice-manager-frontend",
+    "dev:backend": "turbo run dev --filter=invoice-manager-backend",
+    "build": "turbo run build",
+    "build:frontend": "turbo run build --filter=invoice-manager-frontend",
+    "build:backend": "turbo run build --filter=invoice-manager-backend",
+    "lint": "turbo run lint",
+    "prisma:generate": "turbo run prisma:generate",
+    "prisma:migrate": "turbo run prisma:migrate",
+    "prisma:studio": "turbo run prisma:studio"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}
+

@@ -13,78 +13,74 @@ A full-stack invoice management application built with Vue.js, Express.js, TypeS
 
 ```
 invoice-manager/
-├── frontend/          # Vue 3 + TypeScript + Vite + Tailwind
-└── backend/          # Express + TypeScript + Prisma
+├── packages/
+│   ├── frontend/     # Vue 3 + TypeScript + Vite + Tailwind
+│   └── backend/      # Express + TypeScript + Prisma
+├── turbo.json        # Turborepo configuration
+└── package.json      # Root workspace configuration
 ```
 
 ## Prerequisites
 
-- Node.js (v18 or higher)
+- Node.js (v20 or higher)
+- npm (v10 or higher)
 - MySQL database
-- npm or yarn
 
 ## Setup
 
-### Backend Setup
+### Initial Setup
 
-1. Navigate to the backend directory:
-```bash
-cd backend
-```
-
-2. Install dependencies:
+1. Install all dependencies from the root:
 ```bash
 npm install
 ```
 
-3. Create a `.env` file (copy from `.env.example`):
-```bash
-cp .env.example .env
-```
+2. Set up backend environment:
+   - Navigate to `packages/backend/`
+   - Create a `.env` file (copy from `.env.example` if available)
+   - Update the `.env` file with your database connection string:
+   ```
+   DATABASE_URL="mysql://user:password@localhost:3306/invoice_manager"
+   PORT=5000
+   ```
 
-4. Update the `.env` file with your database connection string:
-```
-DATABASE_URL="mysql://user:password@localhost:3306/invoice_manager"
-PORT=5000
-```
-
-5. Generate Prisma Client:
+3. Generate Prisma Client:
 ```bash
 npm run prisma:generate
 ```
 
-6. Run database migrations:
+4. Run database migrations:
 ```bash
 npm run prisma:migrate
 ```
 
 **Note:** After updating the Prisma schema, always run `prisma:generate` to regenerate the Prisma client with updated types.
 
-7. Start the development server:
+### Development
+
+Start both frontend and backend in development mode:
 ```bash
 npm run dev
 ```
 
-The backend will run on `http://localhost:5000`
-
-### Frontend Setup
-
-1. Navigate to the frontend directory:
+Or run them individually:
 ```bash
-cd frontend
+npm run dev:frontend  # Frontend only (http://localhost:3000)
+npm run dev:backend   # Backend only (http://localhost:5000)
 ```
 
-2. Install dependencies:
+### Building
+
+Build all packages:
 ```bash
-npm install
+npm run build
 ```
 
-3. Start the development server:
+Or build individually:
 ```bash
-npm run dev
+npm run build:frontend
+npm run build:backend
 ```
-
-The frontend will run on `http://localhost:3000`
 
 ## API Endpoints
 
@@ -113,18 +109,44 @@ The frontend will run on `http://localhost:3000`
 - MySQL
 - PDFKit (for PDF generation)
 
-## Development
+### Build System
+- Turborepo - Monorepo build system with intelligent caching
 
-### Backend
-- `npm run dev` - Start development server with hot reload
-- `npm run build` - Build for production
-- `npm run start` - Start production server
+## Available Commands
+
+All commands are run from the root directory using Turborepo:
+
+### Development
+- `npm run dev` - Run both frontend and backend in development mode
+- `npm run dev:frontend` - Run only frontend
+- `npm run dev:backend` - Run only backend
+
+### Building
+- `npm run build` - Build all packages
+- `npm run build:frontend` - Build frontend only
+- `npm run build:backend` - Build backend only
+
+### Linting
+- `npm run lint` - Lint all packages
+
+### Prisma
+- `npm run prisma:generate` - Generate Prisma client
+- `npm run prisma:migrate` - Run database migrations
 - `npm run prisma:studio` - Open Prisma Studio
 
-### Frontend
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
+## Turborepo
+
+This project uses [Turborepo](https://turborepo.com/) for build orchestration and caching. Turborepo provides:
+
+- **Intelligent caching** - Builds are cached and reused when inputs haven't changed
+- **Parallel execution** - Tasks run in parallel when possible
+- **Task dependencies** - Automatic dependency management between packages
+- **Fast builds** - Only rebuild what changed
+
+The configuration is in `turbo.json`. To clear the cache:
+```bash
+turbo run build --force
+```
 
 ## License
 

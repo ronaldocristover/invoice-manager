@@ -1,0 +1,62 @@
+{
+    "$schema": "https://turbo.build/schema.json",
+    "tasks": {
+        "build": {
+            "dependsOn": [
+                "^build"
+            ],
+            "outputs": [
+                "dist/**",
+                ".next/**",
+                "!.next/cache/**"
+            ],
+            "env": [
+                "NODE_ENV"
+            ]
+        },
+        "invoice-manager-backend#build": {
+            "dependsOn": [
+                "prisma:generate",
+                "^build"
+            ],
+            "outputs": [
+                "dist/**"
+            ],
+            "env": [
+                "NODE_ENV"
+            ]
+        },
+        "dev": {
+            "cache": false,
+            "persistent": true
+        },
+        "lint": {
+            "outputs": []
+        },
+        "prisma:generate": {
+            "cache": true,
+            "outputs": [
+                "node_modules/.prisma/**",
+                "node_modules/@prisma/client/**"
+            ],
+            "inputs": [
+                "prisma/schema.prisma"
+            ]
+        },
+        "prisma:migrate": {
+            "cache": false
+        },
+        "prisma:studio": {
+            "cache": false,
+            "persistent": true
+        },
+        "start": {
+            "cache": false,
+            "persistent": true
+        },
+        "preview": {
+            "cache": false,
+            "persistent": true
+        }
+    }
+}
