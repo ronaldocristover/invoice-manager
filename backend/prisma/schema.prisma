@@ -1,0 +1,121 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Client {
+  id        String    @id @default(uuid())
+  name      String
+  email     String
+  phone     String?
+  address   String?
+  company   String?
+  taxId     String?
+  notes     String?
+  invoices  Invoice[]
+  projects  Project[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("clients")
+}
+
+model Project {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  clientId    String
+  client      Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  invoices    Invoice[]
+  status      String    @default("active")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("projects")
+}
+
+model Invoice {
+  id            String        @id @default(uuid())
+  invoiceNumber String        @unique
+  clientId      String?
+  client        Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  projectId     String?
+  project       Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  // Legacy fields for backward compatibility
+  clientName    String
+  clientEmail   String
+  clientAddress String
+  issueDate     DateTime
+  dueDate       DateTime
+  status        InvoiceStatus @default(DRAFT)
+  subtotal      Float
+  tax           Float
+  shipping      Float         @default(0)
+  discount      Float         @default(0)
+  total         Float
+  notes         String?
+  terms         String?
+  customFields  Json?
+  items         InvoiceItem[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id          String   @id @default(uuid())
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Int
+  unitPrice   Float
+  total       Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("invoice_items")
+}
+
+model InvoiceSettings {
+  id                String   @id @default(uuid())
+  invoicePrefix     String   @default("INV")
+  invoiceTheme      String   @default("default")
+  logoUrl           String?
+  enableTax         Boolean  @default(true)
+  enableShipping    Boolean  @default(false)
+  enableDiscount    Boolean  @default(false)
+  defaultTax        Float    @default(0)
+  defaultNotes      String?
+  defaultTerms      String?
+  pdfNameFormat     String   @default("invoice-{invoiceNumber}")
+  enableWatermark   Boolean  @default(false)
+  watermarkText     String?
+  watermarkSize     Int      @default(50)
+  watermarkColor    String   @default("#CCCCCC")
+  defaultFont       String   @default("Helvetica")
+  enableSignature   Boolean  @default(false)
+  signatureImageUrl String?
+  signatureText     String?
+  customFields      Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("invoice_settings")
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+
+  @@map("invoice_status")
+}
