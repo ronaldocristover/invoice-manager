@@ -5,6 +5,7 @@ import invoiceRoutes from './routes/invoice.routes.js'
 import settingsRoutes from './routes/settings.routes.js'
 import clientRoutes from './routes/client.routes.js'
 import projectRoutes from './routes/project.routes.js'
+import './lib/prisma.js' // Initialize Prisma client
 
 dotenv.config()
 

@@ -93,32 +93,46 @@
       </div>
     </div>
 
-    <!-- Notes -->
-    <div v-if="invoice.notes" class="mb-4">
-      <h3 class="text-sm font-semibold text-gray-900 mb-2">Notes:</h3>
-      <p class="text-sm text-gray-700 whitespace-pre-line">{{ invoice.notes }}</p>
-    </div>
-
-    <!-- Terms -->
-    <div v-if="invoice.terms" class="mb-4">
-      <h3 class="text-sm font-semibold text-gray-900 mb-2">Terms & Conditions:</h3>
-      <p class="text-sm text-gray-700 whitespace-pre-line">{{ invoice.terms }}</p>
-    </div>
-
-    <!-- Signature -->
-    <div v-if="invoice.enableSignature" class="mt-8 pt-6 border-t border-gray-200">
-      <div class="flex items-end gap-6">
-        <div v-if="invoice.signatureImageUrl" class="flex-shrink-0">
-          <img
-            :src="invoice.signatureImageUrl"
-            alt="Signature"
-            class="h-20 object-contain border border-gray-300 rounded bg-white p-2"
-            @error="() => {}"
-          />
+    <!-- Notes, Terms & Signature - Side by Side Layout -->
+    <div class="grid grid-cols-2 gap-8 mt-8">
+      <!-- Left Column: Notes and Terms -->
+      <div class="space-y-4">
+        <!-- Notes -->
+        <div v-if="invoice.notes">
+          <h3 class="text-sm font-semibold text-gray-900 mb-2">Notes:</h3>
+          <p class="text-sm text-gray-700 whitespace-pre-line">{{ invoice.notes }}</p>
         </div>
-        <div v-else class="flex-shrink-0 w-48 h-16 border-b-2 border-gray-400"></div>
-        <div v-if="invoice.signatureText" class="text-sm text-gray-700">
-          {{ invoice.signatureText }}
+
+        <!-- Terms -->
+        <div v-if="invoice.terms">
+          <h3 class="text-sm font-semibold text-gray-900 mb-2">Terms & Conditions:</h3>
+          <p class="text-sm text-gray-700 whitespace-pre-line">{{ invoice.terms }}</p>
+        </div>
+      </div>
+
+      <!-- Right Column: Signature -->
+      <div v-if="invoice.enableSignature" class="flex flex-col items-end">
+        <div class="w-full max-w-xs flex flex-col items-end">
+          <!-- Signature Image or Line -->
+          <div v-if="invoice.signatureImageUrl" class="mb-3">
+            <img
+              :src="invoice.signatureImageUrl"
+              alt="Signature"
+              class="h-20 object-contain border border-gray-300 rounded bg-white p-2"
+              @error="() => {}"
+            />
+          </div>
+          <div v-else class="mb-3 w-full">
+            <div class="w-full h-16 border-b-2 border-gray-400"></div>
+          </div>
+          
+          <!-- Signature Text (below image/line) -->
+          <div v-if="invoice.signatureText" class="text-sm text-gray-700 text-right w-full">
+            {{ invoice.signatureText }}
+          </div>
+          <div v-else class="text-xs text-gray-500 text-right w-full">
+            Authorized Signature
+          </div>
         </div>
       </div>
     </div>

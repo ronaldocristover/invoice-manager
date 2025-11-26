@@ -77,10 +77,10 @@ export const generatePdf = async (
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
         return result
           ? [
-              parseInt(result[1], 16) / 255,
-              parseInt(result[2], 16) / 255,
-              parseInt(result[3], 16) / 255
-            ]
+            parseInt(result[1], 16) / 255,
+            parseInt(result[2], 16) / 255,
+            parseInt(result[3], 16) / 255
+          ]
           : [0.8, 0.8, 0.8] // Default gray
       }
 
@@ -98,7 +98,7 @@ export const generatePdf = async (
         .fillColor(colors.primary)
         .text('INVOICE', 50, headerY, { align: 'center', width: 500 })
         .fillColor('#000000')
-      
+
       const contentStartY = headerY + 40
 
       // Invoice details box (left side) - matching preview layout
@@ -162,7 +162,7 @@ export const generatePdf = async (
         .fillColor(colors.primary)
         .text('Items:', 50, doc.y)
         .fillColor('#000000')
-      
+
       const tableTop = doc.y + 15
 
       // Table header with background - matching preview
@@ -205,7 +205,7 @@ export const generatePdf = async (
       const totalsY = doc.y
       const totalsX = 350
       const totalsWidth = 200
-      
+
       doc.fontSize(10).font(defaultFont)
       doc.text('Subtotal:', totalsX, totalsY, { width: totalsWidth - 100, align: 'left' })
       doc.text(`$${invoice.subtotal.toFixed(2)}`, totalsX + totalsWidth - 100, totalsY, { width: 100, align: 'right' })
@@ -236,7 +236,7 @@ export const generatePdf = async (
         .moveTo(totalsX, currentY)
         .lineTo(totalsX + totalsWidth, currentY)
         .stroke()
-      
+
       currentY += 10
       doc
         .fontSize(12)
@@ -245,75 +245,153 @@ export const generatePdf = async (
         .text('Total:', totalsX, currentY, { width: totalsWidth - 100, align: 'left' })
         .text(`$${invoice.total.toFixed(2)}`, totalsX + totalsWidth - 100, currentY, { width: 100, align: 'right' })
         .fillColor('#000000')
-      
+
       doc.y = currentY + 20
 
-      // Notes - matching preview layout
+      // Get page dimensions (used for signature, watermark and timestamp)
+      const pageWidth = doc.page.width
+      const pageHeight = doc.page.height
+      const margin = 50
+
+      // Notes, Terms & Signature - side by side layout
+      const notesTermsY = doc.y
+      const leftColumnWidth = 280 // Width for notes and terms
+      const rightColumnWidth = 270 // Width for signature
+      const rightColumnX = pageWidth - margin - rightColumnWidth
+
+      // Left column: Notes and Terms
+      let leftColumnY = notesTermsY
+      let maxLeftHeight = 0
+
+      // Notes - left side
       if (invoice.notes || settings?.defaultNotes) {
         doc.fontSize(11)
           .font(defaultFont.includes('Bold') ? defaultFont : `${defaultFont}-Bold`)
           .fillColor(colors.primary)
-          .text('Notes:', 50, doc.y)
+          .text('Notes:', margin, leftColumnY)
           .fillColor('#000000')
           .font(defaultFont)
         doc.fontSize(10)
-        doc.text(invoice.notes || settings.defaultNotes || '', 50, doc.y + 15, { width: 500 })
-        doc.y += 30
+        const notesText = invoice.notes || settings.defaultNotes || ''
+        const notesHeight = doc.heightOfString(notesText, { width: leftColumnWidth - 10 })
+        doc.text(notesText, margin, leftColumnY + 15, { width: leftColumnWidth - 10 })
+        leftColumnY += notesHeight + 25
+        maxLeftHeight = Math.max(maxLeftHeight, leftColumnY - notesTermsY)
       }
 
-      // Terms & Conditions - matching preview layout
+      // Terms & Conditions - left side
       if (invoice.terms || settings?.defaultTerms) {
         doc.fontSize(11)
           .font(defaultFont.includes('Bold') ? defaultFont : `${defaultFont}-Bold`)
           .fillColor(colors.primary)
-          .text('Terms & Conditions:', 50, doc.y)
+          .text('Terms & Conditions:', margin, leftColumnY)
           .fillColor('#000000')
           .font(defaultFont)
         doc.fontSize(10)
-        doc.text(invoice.terms || settings.defaultTerms || '', 50, doc.y + 15, { width: 500 })
-        doc.y += 30
+        const termsText = invoice.terms || settings.defaultTerms || ''
+        const termsHeight = doc.heightOfString(termsText, { width: leftColumnWidth - 10 })
+        doc.text(termsText, margin, leftColumnY + 15, { width: leftColumnWidth - 10 })
+        leftColumnY += termsHeight + 25
+        maxLeftHeight = Math.max(maxLeftHeight, leftColumnY - notesTermsY)
       }
 
-      // Signature section - matching preview layout
+      // Right column: Signature section (aligned with Notes/Terms start)
+      let maxRightHeight = 0
       if (settings?.enableSignature) {
-        const signatureY = doc.y + 20
-        
+        const signatureY = notesTermsY
+        const signatureWidth = rightColumnWidth
+        let finalSignatureY = signatureY
+
         // Signature image if provided
         if (settings.signatureImageUrl) {
-          // Note: In production, you'd need to fetch and embed the image
-          // For now, we'll add space for it and show a placeholder
-          doc.rect(50, signatureY, 150, 60)
+          try {
+            // Check if it's a file path or URL
+            // For file paths, PDFKit can load directly
+            // For URLs, you'd need to fetch first (implementation needed)
+            const isUrl = settings.signatureImageUrl.startsWith('http://') ||
+              settings.signatureImageUrl.startsWith('https://')
+
+            if (isUrl) {
+              // URL - show placeholder (in production, fetch and convert to buffer)
+              doc.rect(rightColumnX, finalSignatureY, signatureWidth, 50)
+                .stroke()
+                .fontSize(8)
+                .fillColor('#999999')
+                .text('Signature Image\n(URL)', rightColumnX, finalSignatureY + 15, {
+                  width: signatureWidth,
+                  align: 'center'
+                })
+                .fillColor('#000000')
+            } else {
+              // File path - try to load image
+              try {
+                doc.image(settings.signatureImageUrl, rightColumnX, finalSignatureY, {
+                  width: signatureWidth,
+                  height: 50,
+                  fit: [signatureWidth, 50]
+                })
+              } catch (imageError) {
+                // If image loading fails, show placeholder
+                doc.rect(rightColumnX, finalSignatureY, signatureWidth, 50)
+                  .stroke()
+                  .fontSize(8)
+                  .fillColor('#999999')
+                  .text('Signature Image', rightColumnX, finalSignatureY + 20, {
+                    width: signatureWidth,
+                    align: 'center'
+                  })
+                  .fillColor('#000000')
+              }
+            }
+            finalSignatureY += 55
+          } catch (error) {
+            // If image loading fails, show placeholder
+            doc.rect(rightColumnX, finalSignatureY, signatureWidth, 50)
+              .stroke()
+              .fontSize(8)
+              .fillColor('#999999')
+              .text('Signature Image', rightColumnX, finalSignatureY + 20, {
+                width: signatureWidth,
+                align: 'center'
+              })
+              .fillColor('#000000')
+            finalSignatureY += 55
+          }
+        } else {
+          // Draw signature line if no image
+          const lineY = finalSignatureY + 20
+          doc.moveTo(rightColumnX, lineY)
+            .lineTo(rightColumnX + signatureWidth, lineY)
             .stroke()
-            .fontSize(8)
-            .fillColor('#999999')
-            .text('Signature Image', 50, signatureY + 25, { width: 150, align: 'center' })
-            .fillColor('#000000')
+          finalSignatureY += 30
         }
-        
-        // Signature text if provided
+
+        // Signature name/text below the signature line or image (right-aligned)
         if (settings.signatureText) {
-          const textX = settings.signatureImageUrl ? 220 : 50
           doc.fontSize(10)
             .font(defaultFont)
-            .text(settings.signatureText, textX, signatureY + 20, { width: 330 })
-        }
-        
-        // If no image or text, show a line for signature
-        if (!settings.signatureImageUrl && !settings.signatureText) {
-          doc.moveTo(50, signatureY + 30)
-            .lineTo(200, signatureY + 30)
-            .stroke()
+            .fillColor('#000000')
+            .text(settings.signatureText, rightColumnX, finalSignatureY, {
+              width: signatureWidth,
+              align: 'right'
+            })
+          finalSignatureY += 15
+        } else {
+          // Default text if no signature text provided
           doc.fontSize(9)
             .fillColor('#666666')
-            .text('Signature', 50, signatureY + 35)
+            .text('Authorized Signature', rightColumnX, finalSignatureY, {
+              width: signatureWidth,
+              align: 'right'
+            })
             .fillColor('#000000')
+          finalSignatureY += 15
         }
+        maxRightHeight = finalSignatureY - notesTermsY
       }
 
-      // Get page dimensions (used for watermark and timestamp)
-      const pageWidth = doc.page.width
-      const pageHeight = doc.page.height
-      const margin = 50
+      // Update doc.y to the bottom of the tallest column (notes/terms or signature)
+      doc.y = notesTermsY + Math.max(maxLeftHeight || 0, maxRightHeight || 0) + 10
 
       // Add watermark if enabled
       if (settings?.enableWatermark && settings?.watermarkText) {
@@ -349,7 +427,7 @@ export const generatePdf = async (
       }
 
       // Add generated timestamp at bottom right
-      
+
       // Format current date and time with timezone
       const now = new Date()
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -358,7 +436,7 @@ export const generatePdf = async (
       const offsetMinutes = Math.abs(timezoneOffset) % 60
       const offsetSign = timezoneOffset >= 0 ? '+' : '-'
       const timezoneString = `${offsetSign}${String(offsetHours).padStart(2, '0')}:${String(offsetMinutes).padStart(2, '0')}`
-      
+
       // Format date as "23 October 2025"
       const day = now.getDate()
       const monthNames = [
@@ -368,15 +446,15 @@ export const generatePdf = async (
       const month = monthNames[now.getMonth()]
       const year = now.getFullYear()
       const formattedDate = `${day} ${month} ${year}`
-      
+
       // Format time as HH:MM:SS
       const hours = String(now.getHours()).padStart(2, '0')
       const minutes = String(now.getMinutes()).padStart(2, '0')
       const seconds = String(now.getSeconds()).padStart(2, '0')
       const formattedTime = `${hours}:${minutes}:${seconds}`
-      
+
       const generatedText = `Generated at: ${formattedDate} ${formattedTime} ${timezoneString}`
-      
+
       // Position at bottom right
       doc
         .fontSize(6)

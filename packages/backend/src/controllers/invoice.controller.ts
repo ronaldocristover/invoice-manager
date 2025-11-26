@@ -1,8 +1,6 @@
 import { Request, Response } from 'express'
-import { PrismaClient } from '@prisma/client'
 import { generatePdf } from '../services/pdf.service.js'
-
-const prisma = new PrismaClient()
+import { prisma } from '../lib/prisma.js'
 
 export const getAllInvoices = async (req: Request, res: Response): Promise<void> => {
     try {

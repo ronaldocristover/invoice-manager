@@ -1,7 +1,5 @@
 import { Request, Response } from 'express'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '../lib/prisma.js'
 
 export const getSettings = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -89,14 +87,14 @@ export const updateSettings = async (req: Request, res: Response): Promise<void>
     if (enableWatermark !== undefined) updateData.enableWatermark = enableWatermark
     if (watermarkText !== undefined) updateData.watermarkText = watermarkText
     if (watermarkSize !== undefined) updateData.watermarkSize = watermarkSize
-      if (watermarkColor !== undefined) updateData.watermarkColor = watermarkColor
-      if (defaultFont !== undefined) updateData.defaultFont = defaultFont
-      if (enableSignature !== undefined) updateData.enableSignature = enableSignature
-      if (signatureImageUrl !== undefined) updateData.signatureImageUrl = signatureImageUrl
-      if (signatureText !== undefined) updateData.signatureText = signatureText
-      if (customFields !== undefined) {
-        updateData.customFields = customFields
-      }
+    if (watermarkColor !== undefined) updateData.watermarkColor = watermarkColor
+    if (defaultFont !== undefined) updateData.defaultFont = defaultFont
+    if (enableSignature !== undefined) updateData.enableSignature = enableSignature
+    if (signatureImageUrl !== undefined) updateData.signatureImageUrl = signatureImageUrl
+    if (signatureText !== undefined) updateData.signatureText = signatureText
+    if (customFields !== undefined) {
+      updateData.customFields = customFields
+    }
 
     if (settings) {
       settings = await prisma.invoiceSettings.update({
@@ -141,11 +139,14 @@ export const updateSettings = async (req: Request, res: Response): Promise<void>
       defaultNotes: settings.defaultNotes,
       defaultTerms: settings.defaultTerms,
       pdfNameFormat: settings.pdfNameFormat,
-      enableWatermark: settings.enableWatermark,
-      watermarkText: settings.watermarkText,
-      watermarkSize: settings.watermarkSize,
-      watermarkColor: settings.watermarkColor,
-      defaultFont: settings.defaultFont,
+      enableWatermark: (settings as any).enableWatermark,
+      watermarkText: (settings as any).watermarkText,
+      watermarkSize: (settings as any).watermarkSize,
+      watermarkColor: (settings as any).watermarkColor,
+      defaultFont: (settings as any).defaultFont,
+      enableSignature: (settings as any).enableSignature,
+      signatureImageUrl: (settings as any).signatureImageUrl,
+      signatureText: (settings as any).signatureText,
       customFields: settings.customFields ? (settings.customFields as any) : []
     })
   } catch (error) {
