@@ -22,39 +22,91 @@ invoice-manager/
 
 ## Prerequisites
 
-- Node.js (v20 or higher)
-- npm (v10 or higher)
-- MySQL database
+Before installing, make sure you have the following installed on your system:
 
-## Setup
+- **Node.js** (v20 or higher) - [Download](https://nodejs.org/)
+- **npm** (v10 or higher) - Comes with Node.js
+- **MySQL** (v8.0 or higher) - [Download](https://dev.mysql.com/downloads/)
+- **Git** - [Download](https://git-scm.com/downloads)
 
-### Initial Setup
+Optional (for Docker deployment):
+- **Docker** (v20.10 or higher) - [Download](https://www.docker.com/get-started)
+- **Docker Compose** (v2.0 or higher) - Comes with Docker Desktop
 
-1. Install all dependencies from the root:
+## Installation
+
+### Step 1: Clone the Repository
+
+```bash
+git clone https://github.com/your-username/invoice-manager.git
+cd invoice-manager
+```
+
+### Step 2: Install Dependencies
+
+Install all dependencies from the root directory:
+
 ```bash
 npm install
 ```
 
-2. Set up backend environment:
-   - Navigate to `packages/backend/`
-   - Create a `.env` file (copy from `.env.example` if available)
-   - Update the `.env` file with your database connection string:
-   ```
-   DATABASE_URL="mysql://user:password@localhost:3306/invoice_manager"
-   PORT=5000
-   ```
+This will install dependencies for both frontend and backend packages using npm workspaces.
 
-3. Generate Prisma Client:
+### Step 3: Set Up Database
+
+1. Create a MySQL database:
 ```bash
-npm run prisma:generate
+mysql -u root -p
+CREATE DATABASE invoice_manager;
+EXIT;
 ```
 
-4. Run database migrations:
+2. Set up backend environment:
+   - Navigate to `packages/backend/`
+   - Create a `.env` file:
+   ```bash
+   cd packages/backend
+   touch .env
+   ```
+
+3. Add the following to `packages/backend/.env`:
+   ```env
+   DATABASE_URL="mysql://username:password@localhost:3306/invoice_manager"
+   PORT=5000
+   NODE_ENV=development
+   ```
+   
+   Replace `username` and `password` with your MySQL credentials.
+
+### Step 4: Run Database Migrations
+
+From the root directory:
+
 ```bash
+# Generate Prisma Client
+npm run prisma:generate
+
+# Run database migrations
 npm run prisma:migrate
 ```
 
-**Note:** After updating the Prisma schema, always run `prisma:generate` to regenerate the Prisma client with updated types.
+This will create all necessary database tables.
+
+### Step 5: Verify Installation
+
+Start the development servers:
+
+```bash
+npm run dev
+```
+
+You should see:
+- Backend running on `http://localhost:5000`
+- Frontend running on `http://localhost:3000`
+
+Open your browser and navigate to `http://localhost:3000` to see the application.
+
+**Note:** After updating the Prisma schema, always run `npm run prisma:generate` to regenerate the Prisma client with updated types.
 
 ### Development
 
@@ -148,23 +200,37 @@ The configuration is in `turbo.json`. To clear the cache:
 turbo run build --force
 ```
 
-## Docker
+## Docker Installation
 
-This project includes Dockerfiles for both frontend and backend services.
+For containerized deployment, you can use Docker and Docker Compose.
 
-### Build Docker Images
+### Prerequisites for Docker
 
+- Docker and Docker Compose installed
+- MySQL database (can be in a separate container or external)
+
+### Installation with Docker
+
+1. **Clone the repository** (if not already done):
 ```bash
-# Build backend image
-docker build -f packages/backend/Dockerfile -t invoice-manager-backend:latest .
-
-# Build frontend image
-docker build -f packages/frontend/Dockerfile -t invoice-manager-frontend:latest .
+git clone https://github.com/your-username/invoice-manager.git
+cd invoice-manager
 ```
 
-### Run with Docker Compose
+2. **Set up environment variables**:
+   
+   Create a `.env` file in the root directory:
+   ```env
+   DATABASE_URL="mysql://username:password@host:3306/invoice_manager"
+   ```
 
+   Or update `docker-compose.yml` with your database connection string.
+
+3. **Build and run with Docker Compose**:
 ```bash
+# Build images
+docker-compose build
+
 # Start all services
 docker-compose up -d
 
@@ -175,7 +241,24 @@ docker-compose logs -f
 docker-compose down
 ```
 
-Make sure to set the `DATABASE_URL` environment variable in `docker-compose.yml` or create a `.env` file.
+4. **Run database migrations** (first time only):
+```bash
+docker-compose exec backend npx prisma migrate deploy
+```
+
+The application will be available at:
+- Frontend: `http://localhost:80`
+- Backend API: `http://localhost:5000`
+
+### Build Individual Docker Images
+
+```bash
+# Build backend image
+docker build -f packages/backend/Dockerfile -t invoice-manager-backend:latest .
+
+# Build frontend image
+docker build -f packages/frontend/Dockerfile -t invoice-manager-frontend:latest .
+```
 
 ## CI/CD
 
