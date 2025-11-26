@@ -148,6 +148,61 @@ The configuration is in `turbo.json`. To clear the cache:
 turbo run build --force
 ```
 
+## Docker
+
+This project includes Dockerfiles for both frontend and backend services.
+
+### Build Docker Images
+
+```bash
+# Build backend image
+docker build -f packages/backend/Dockerfile -t invoice-manager-backend:latest .
+
+# Build frontend image
+docker build -f packages/frontend/Dockerfile -t invoice-manager-frontend:latest .
+```
+
+### Run with Docker Compose
+
+```bash
+# Start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
+
+Make sure to set the `DATABASE_URL` environment variable in `docker-compose.yml` or create a `.env` file.
+
+## CI/CD
+
+This project includes GitHub Actions workflows for automated Docker image building and deployment to DigitalOcean.
+
+### Features
+
+- **Automatic Docker builds** - Builds images on every push
+- **Multi-registry support** - Docker Hub or DigitalOcean Container Registry
+- **Automatic deployment** - Deploys to DigitalOcean App Platform or Droplet
+
+### Deployment Options
+
+1. **DigitalOcean App Platform** (Recommended) - Managed platform with automatic scaling
+2. **DigitalOcean Droplet** - Self-managed VPS deployment with Docker
+
+See [`.github/workflows/README.md`](.github/workflows/README.md) for detailed setup instructions.
+
+### Quick Setup
+
+1. Configure Docker registry secrets in GitHub:
+   - `DOCKER_USERNAME` and `DOCKER_PASSWORD` (for Docker Hub)
+   - Or `DIGITALOCEAN_ACCESS_TOKEN` (for DigitalOcean Container Registry)
+   - `DOCKER_REGISTRY` and `DOCKER_IMAGE_PREFIX`
+2. Configure deployment secrets (App Platform or Droplet)
+3. Push to `main` branch to trigger automatic build and deployment
+
 ## License
 
 MIT

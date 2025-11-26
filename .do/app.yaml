@@ -1,0 +1,60 @@
+name: invoice-manager
+region: nyc
+services:
+  - name: backend
+    github:
+      repo: YOUR_USERNAME/invoice-manager
+      branch: main
+      deploy_on_push: true
+    source_dir: packages/backend
+    build_command: npm ci && npm run prisma:generate && npm run build
+    run_command: npm start
+    environment_slug: node-js
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    http_port: 5000
+    routes:
+      - path: /api
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        type: SECRET
+      - key: PORT
+        value: "5000"
+    health_check:
+      http_path: /api
+      initial_delay_seconds: 30
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 3
+
+  - name: frontend
+    github:
+      repo: YOUR_USERNAME/invoice-manager
+      branch: main
+      deploy_on_push: true
+    source_dir: packages/frontend
+    build_command: npm ci && npm run build
+    run_command: npm run preview
+    environment_slug: node-js
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    http_port: 3000
+    routes:
+      - path: /
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: VITE_API_URL
+        value: https://backend-xxxxx.ondigitalocean.app/api
+    health_check:
+      http_path: /
+      initial_delay_seconds: 30
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 3
+
