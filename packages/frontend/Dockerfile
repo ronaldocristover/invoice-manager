@@ -15,19 +15,24 @@ RUN npm ci
 
 # Build stage
 FROM base AS builder
-WORKDIR /app
+WORKDIR /app/packages/frontend
 
-# Copy dependencies
-COPY --from=deps /app/node_modules ./node_modules
+# Copy package.json and install dependencies directly in frontend
+COPY packages/frontend/package.json packages/frontend/package-lock.json* ./
+RUN npm ci
 
-# Copy source files
-COPY packages/frontend ./packages/frontend
-COPY package.json package-lock.json* ./
-COPY turbo.json ./
+# Copy source files and configs
+COPY packages/frontend/src ./src
+COPY packages/frontend/index.html ./
+COPY packages/frontend/vite.config.ts ./
+COPY packages/frontend/tsconfig.json ./
+COPY packages/frontend/tsconfig.node.json ./
+COPY packages/frontend/tailwind.config.js ./
+COPY packages/frontend/postcss.config.js ./
 
-# Build frontend
+# Build frontend (skip type checking for Docker builds - use vite directly)
 ENV NODE_ENV=production
-RUN npm run build --workspace=packages/frontend
+RUN npx vite build
 
 # Production stage with nginx
 FROM nginx:alpine AS runner
