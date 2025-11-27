@@ -1,5 +1,6 @@
 import PDFDocument from 'pdfkit'
 import type { Invoice, InvoiceItem } from '@prisma/client'
+import logger from '../lib/logger.js'
 
 interface InvoiceWithItems extends Invoice {
   items: InvoiceItem[]
@@ -69,10 +70,90 @@ const formatCurrency = (amount: number, settings?: InvoiceSettings): string => {
   return `${sign}${symbol}${parts.join('.')}` // Default USD
 }
 
+// Helper function to fetch image from URL
+const fetchImageFromUrl = async (url: string): Promise<Buffer | null> => {
+  try {
+    logger.debug('Fetching signature image from URL', { url })
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Invoice-Manager/1.0'
+      }
+    })
+    if (!response.ok) {
+      logger.warn('Failed to fetch signature image', { url, status: response.status })
+      return null
+    }
+    const arrayBuffer = await response.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+    logger.debug('Successfully fetched signature image', { url, size: buffer.length })
+    return buffer
+  } catch (error: any) {
+    logger.error('Error fetching signature image from URL', { url, error: error.message })
+    return null
+  }
+}
+
 export const generatePdf = async (
   invoice: InvoiceWithItems,
   settings?: InvoiceSettings
 ): Promise<Buffer> => {
+  // Pre-fetch signature image if it's a URL or file path
+  let signatureImageBuffer: Buffer | null = null
+  if (settings?.enableSignature && settings?.signatureImageUrl) {
+    logger.info('Pre-loading signature image for PDF', {
+      imageUrl: settings.signatureImageUrl,
+      enableSignature: settings.enableSignature
+    })
+
+    const isUrl = settings.signatureImageUrl.startsWith('http://') ||
+      settings.signatureImageUrl.startsWith('https://')
+
+    if (isUrl) {
+      signatureImageBuffer = await fetchImageFromUrl(settings.signatureImageUrl)
+      if (signatureImageBuffer) {
+        logger.info('✓ Signature image loaded from URL', {
+          url: settings.signatureImageUrl,
+          size: signatureImageBuffer.length
+        })
+      } else {
+        logger.warn('✗ Failed to load signature image from URL', { url: settings.signatureImageUrl })
+      }
+    } else {
+      // File path - try to load image
+      try {
+        const fs = await import('fs')
+        const path = await import('path')
+        // Resolve the file path
+        const filePath = path.isAbsolute(settings.signatureImageUrl)
+          ? settings.signatureImageUrl
+          : path.resolve(process.cwd(), settings.signatureImageUrl)
+
+        logger.debug('Loading signature image from file path', { filePath })
+        if (fs.existsSync(filePath)) {
+          signatureImageBuffer = fs.readFileSync(filePath)
+          logger.info('✓ Signature image loaded from file', {
+            filePath,
+            size: signatureImageBuffer.length
+          })
+        } else {
+          logger.warn('✗ Signature image file not found', { filePath })
+        }
+      } catch (fileError: any) {
+        // File doesn't exist or can't be read
+        logger.error('✗ Error loading signature image from file', {
+          path: settings.signatureImageUrl,
+          error: fileError.message
+        })
+        signatureImageBuffer = null
+      }
+    }
+  } else {
+    logger.debug('Signature image not configured', {
+      enableSignature: settings?.enableSignature,
+      hasImageUrl: !!settings?.signatureImageUrl
+    })
+  }
+
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({ margin: 50, size: 'A4' })
@@ -418,96 +499,111 @@ export const generatePdf = async (
       // Right column: Signature section (aligned with Notes/Terms start)
       let maxRightHeight = 0
       if (settings?.enableSignature) {
-        const signatureY = notesTermsY
+        // Start signature at the same Y position as notes/terms
+        const signatureStartY = notesTermsY
         const signatureWidth = rightColumnWidth
-        let finalSignatureY = signatureY
+        let yPosition = signatureStartY
 
-        // Signature image if provided
-        if (settings.signatureImageUrl) {
+        logger.debug('Starting signature section', {
+          signatureStartY,
+          signatureColumnX,
+          hasImage: !!signatureImageBuffer,
+          hasText: !!settings.signatureText
+        })
+
+        // ============================================
+        // STEP 1: RENDER SIGNATURE IMAGE FIRST (ABOVE TEXT)
+        // ============================================
+        // CRITICAL: Image MUST be rendered BEFORE text to appear above
+        // Store the Y position where image will be placed
+        const imageYPosition = yPosition
+
+        if (signatureImageBuffer && signatureImageBuffer.length > 0) {
           try {
-            // Check if it's a file path or URL
-            // For file paths, PDFKit can load directly
-            // For URLs, you'd need to fetch first (implementation needed)
-            const isUrl = settings.signatureImageUrl.startsWith('http://') ||
-              settings.signatureImageUrl.startsWith('https://')
+            const imageHeight = 50
+            const imageWidth = Math.min(signatureWidth, 200)
 
-            if (isUrl) {
-              // URL - show placeholder (in production, fetch and convert to buffer)
-              doc.rect(signatureColumnX, finalSignatureY, signatureWidth, 50)
-                .stroke()
-                .fontSize(8)
-                .fillColor('#999999')
-                .text('Signature Image\n(URL)', signatureColumnX, finalSignatureY + 15, {
-                  width: signatureWidth,
-                  align: 'center'
-                })
-                .fillColor('#000000')
-            } else {
-              // File path - try to load image
-              try {
-                doc.image(settings.signatureImageUrl, signatureColumnX, finalSignatureY, {
-                  width: signatureWidth,
-                  height: 50,
-                  fit: [signatureWidth, 50]
-                })
-              } catch (imageError) {
-                // If image loading fails, show placeholder
-                doc.rect(signatureColumnX, finalSignatureY, signatureWidth, 50)
-                  .stroke()
-                  .fontSize(8)
-                  .fillColor('#999999')
-                  .text('Signature Image', signatureColumnX, finalSignatureY + 20, {
-                    width: signatureWidth,
-                    align: 'center'
-                  })
-                  .fillColor('#000000')
-              }
-            }
-            finalSignatureY += 55
-          } catch (error) {
-            // If image loading fails, show placeholder
-            doc.rect(signatureColumnX, finalSignatureY, signatureWidth, 50)
-              .stroke()
-              .fontSize(8)
-              .fillColor('#999999')
-              .text('Signature Image', signatureColumnX, finalSignatureY + 20, {
-                width: signatureWidth,
-                align: 'center'
-              })
-              .fillColor('#000000')
-            finalSignatureY += 55
+            // Calculate X position: move 30% more to the right from right-aligned position
+            // This positions the image further to the right
+            const imageXPosition = signatureColumnX + signatureWidth - imageWidth + (signatureWidth * 0.4)
+
+            logger.info('Rendering signature IMAGE FIRST at Y position', {
+              x: imageXPosition,
+              y: imageYPosition,
+              width: imageWidth,
+              height: imageHeight,
+              bufferSize: signatureImageBuffer.length
+            })
+
+            // CRITICAL: Render image FIRST at imageYPosition, right-aligned
+            // This ensures image appears above and aligned with the signature text
+            doc.image(signatureImageBuffer, imageXPosition, imageYPosition, {
+              width: imageWidth,
+              height: imageHeight,
+              fit: [imageWidth, imageHeight]
+            })
+
+            // Update Y position: move down after image + add spacing
+            yPosition = imageYPosition + imageHeight + 10
+
+            logger.info('✓ Signature IMAGE rendered at Y=' + imageYPosition + ' (ABOVE text, right-aligned)')
+          } catch (imageError: any) {
+            logger.error('✗ Failed to render signature image', {
+              error: imageError.message,
+              stack: imageError.stack
+            })
+            yPosition += 20
           }
         } else {
-          // Draw signature line if no image
-          const lineY = finalSignatureY + 20
-          doc.moveTo(signatureColumnX, lineY)
-            .lineTo(signatureColumnX + signatureWidth, lineY)
-            .stroke()
-          finalSignatureY += 30
+          logger.warn('No signature image buffer available', {
+            hasBuffer: !!signatureImageBuffer,
+            bufferSize: signatureImageBuffer?.length || 0,
+            imageUrl: settings.signatureImageUrl
+          })
+          yPosition += 20
         }
 
-        // Signature name/text below the signature line or image (right-aligned)
+        // ============================================
+        // STEP 2: RENDER SIGNATURE TEXT BELOW IMAGE
+        // ============================================
+        // CRITICAL: Text MUST be rendered AFTER image at a LOWER Y position
+        // Store the Y position where text will be placed
+        const textYPosition = yPosition
+
         if (settings.signatureText) {
+          logger.info('Rendering signature TEXT BELOW image at Y position', {
+            x: signatureColumnX,
+            y: textYPosition,
+            text: settings.signatureText,
+            imageWasRendered: !!signatureImageBuffer && signatureImageBuffer.length > 0
+          })
+
           doc.fontSize(10)
             .font(defaultFont)
             .fillColor('#000000')
-            .text(settings.signatureText, signatureColumnX, finalSignatureY, {
+            .text(settings.signatureText, signatureColumnX, textYPosition, {
               width: signatureWidth,
               align: 'right'
             })
-          finalSignatureY += 15
+
+          logger.info('✓ Signature TEXT rendered at Y=' + textYPosition + ' (BELOW image)')
+          yPosition += 15
         } else {
-          // Default text if no signature text provided
           doc.fontSize(9)
             .fillColor('#666666')
-            .text('Authorized Signature', signatureColumnX, finalSignatureY, {
+            .text('Authorized Signature', signatureColumnX, textYPosition, {
               width: signatureWidth,
               align: 'right'
             })
             .fillColor('#000000')
-          finalSignatureY += 15
+          yPosition += 15
         }
-        maxRightHeight = finalSignatureY - notesTermsY
+
+        maxRightHeight = yPosition - notesTermsY
+        logger.debug('Signature section complete', {
+          totalHeight: maxRightHeight,
+          finalY: yPosition
+        })
       }
 
       // Update doc.y to the bottom of the tallest column (notes/terms or signature)
@@ -586,7 +682,7 @@ export const generatePdf = async (
         .text(
           generatedText,
           pageWidth - margin - doc.widthOfString(generatedText),
-          pageHeight - margin - 10,
+          pageHeight - margin - 20,
           { align: 'right' }
         )
         .fillColor('#000000')

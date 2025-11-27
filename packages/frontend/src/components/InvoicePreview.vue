@@ -145,20 +145,17 @@
       <!-- Right Column: Signature -->
       <div v-if="invoice.enableSignature" class="flex flex-col items-end">
         <div class="w-full max-w-xs flex flex-col items-end">
-          <!-- Signature Image or Line -->
+          <!-- Signature Image (no border, leave blank if no image) -->
           <div v-if="invoice.signatureImageUrl" class="mb-3">
             <img
               :src="invoice.signatureImageUrl"
               alt="Signature"
-              class="h-20 object-contain border border-gray-300 rounded bg-white p-2"
+              class="h-20 object-contain"
               @error="() => {}"
             />
           </div>
-          <div v-else class="mb-3 w-full">
-            <div class="w-full h-16 border-b-2 border-gray-400"></div>
-          </div>
           
-          <!-- Signature Text (below image/line) -->
+          <!-- Signature Text (below image) -->
           <div v-if="invoice.signatureText" class="text-sm text-gray-700 text-right w-full">
             {{ invoice.signatureText }}
           </div>
