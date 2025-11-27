@@ -50,7 +50,7 @@
                   project.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                 ]"
               >
-                {{ project.status }}
+                {{ formatProjectStatus(project.status) }}
               </span>
             </div>
             <div v-if="project.description">
@@ -150,6 +150,13 @@ const getStatusClass = (status: string): string => {
 
 const formatStatus = (status: string): string => {
   return status.charAt(0).toUpperCase() + status.slice(1)
+}
+
+const formatProjectStatus = (status: string): string => {
+  if (status === 'active') {
+    return 'Active'
+  }
+  return 'Not Active'
 }
 
 const formatDate = (dateString: string): string => {

@@ -267,6 +267,22 @@
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+              <div class="md:col-span-1">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Amount Paid ($)
+                </label>
+                <input
+                  v-model.number="form.amountPaid"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p class="mt-1 text-xs text-gray-500">
+                  Amount already paid for this invoice
+                </p>
+              </div>
             </div>
             <div class="mt-4 p-4 bg-gray-50 rounded-lg">
               <div class="space-y-2">
@@ -289,6 +305,16 @@
                 <div class="flex justify-between text-lg font-bold pt-2 border-t border-gray-300">
                   <span>Total:</span>
                   <span class="text-blue-600">${{ total.toFixed(2) }}</span>
+                </div>
+                <div v-if="(form.amountPaid || 0) > 0" class="flex justify-between text-sm pt-2 border-t border-gray-200">
+                  <span class="text-gray-600">Amount Paid:</span>
+                  <span class="text-green-600 font-medium">${{ (form.amountPaid || 0).toFixed(2) }}</span>
+                </div>
+                <div v-if="(form.amountPaid || 0) > 0" class="flex justify-between text-sm font-semibold pt-2">
+                  <span class="text-gray-700">Balance Due:</span>
+                  <span :class="(total - (form.amountPaid || 0)) > 0 ? 'text-red-600' : 'text-green-600'">
+                    ${{ (total - (form.amountPaid || 0)).toFixed(2) }}
+                  </span>
                 </div>
               </div>
             </div>
@@ -395,7 +421,7 @@ const projects = ref<Project[]>([])
 const selectedClientId = ref<string>('')
 const showConfirmModal = ref(false)
 
-const form = ref<CreateInvoiceDto & { status: 'draft' | 'sent' | 'paid' | 'overdue'; shipping?: number; discount?: number; terms?: string }>({
+const form = ref<CreateInvoiceDto & { status: 'draft' | 'sent' | 'paid' | 'overdue'; shipping?: number; discount?: number; amountPaid?: number; terms?: string }>({
   invoiceNumber: '',
   clientId: undefined,
   projectId: undefined,
@@ -415,6 +441,7 @@ const form = ref<CreateInvoiceDto & { status: 'draft' | 'sent' | 'paid' | 'overd
   tax: 0,
   shipping: 0,
   discount: 0,
+  amountPaid: 0,
   notes: '',
   terms: ''
 })
@@ -459,7 +486,12 @@ const previewData = computed(() => ({
   enableDiscount: settings.value?.enableDiscount,
   enableSignature: settings.value?.enableSignature,
   signatureImageUrl: settings.value?.signatureImageUrl,
-  signatureText: settings.value?.signatureText
+  signatureText: settings.value?.signatureText,
+  enableFrom: settings.value?.enableFrom,
+  companyName: settings.value?.companyName,
+  companyAddress: settings.value?.companyAddress,
+  companyEmail: settings.value?.companyEmail,
+  companyPhone: settings.value?.companyPhone
 }))
 
 const subtotal = computed(() => {

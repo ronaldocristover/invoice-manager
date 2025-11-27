@@ -1,0 +1,49 @@
+meta {
+  name: Update Project
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/projects/:id
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 
+}
+
+body:json {
+  {
+    "name": "Updated Project Name",
+    "description": "Updated description",
+    "clientId": "uuid",
+    "status": "NOT_ACTIVE"
+  }
+}
+
+docs {
+  # Update Project
+  
+  Update an existing project.
+  
+  **Path Parameters:**
+  - `id` (string, required): Project UUID
+  
+  **Request Body:** All fields optional
+  - `name` (string): Project name
+  - `description` (string): Project description
+  - `clientId` (string): Client UUID
+  - `status` (string): Project status (ACTIVE, NOT_ACTIVE)
+  
+  **Response:** 200 OK
+  ```json
+  {
+    "id": "uuid",
+    "name": "Updated Project Name",
+    ...
+  }
+  ```
+}
+

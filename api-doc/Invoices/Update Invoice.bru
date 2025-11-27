@@ -1,0 +1,63 @@
+meta {
+  name: Update Invoice
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/invoices/:id
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 
+}
+
+body:json {
+  {
+    "invoiceNumber": "INV-0001",
+    "clientId": "uuid",
+    "projectId": "uuid",
+    "clientName": "Client Name",
+    "clientEmail": "client@example.com",
+    "clientAddress": "Client Address",
+    "issueDate": "2024-01-01",
+    "dueDate": "2024-01-31",
+    "status": "sent",
+    "items": [
+      {
+        "description": "Item description",
+        "quantity": 1,
+        "unitPrice": 1000.00
+      }
+    ],
+    "tax": 10,
+    "shipping": 0,
+    "discount": 0,
+    "amountPaid": 500.00,
+    "notes": "Updated notes",
+    "terms": "Updated terms"
+  }
+}
+
+docs {
+  # Update Invoice
+  
+  Update an existing invoice.
+  
+  **Path Parameters:**
+  - `id` (string, required): Invoice UUID
+  
+  **Request Body:** Same as Create Invoice (all fields optional)
+  
+  **Response:** 200 OK
+  ```json
+  {
+    "id": "uuid",
+    "invoiceNumber": "INV-0001",
+    ...
+  }
+  ```
+}
+

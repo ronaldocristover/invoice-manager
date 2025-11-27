@@ -1,0 +1,47 @@
+meta {
+  name: Get Project By ID
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/projects/:id
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 
+}
+
+docs {
+  # Get Project By ID
+  
+  Retrieve a single project by ID.
+  
+  **Path Parameters:**
+  - `id` (string, required): Project UUID
+  
+  **Response:**
+  ```json
+  {
+    "id": "uuid",
+    "name": "Project Name",
+    "description": "Project description",
+    "clientId": "uuid",
+    "client": {
+      "id": "uuid",
+      "name": "Client Name",
+      "email": "client@example.com"
+    },
+    "status": "ACTIVE",
+    "invoices": [...],
+    "_count": {
+      "invoices": 5
+    },
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+  ```
+}
+

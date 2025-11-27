@@ -1,0 +1,78 @@
+meta {
+  name: Create Invoice
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/invoices
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "invoiceNumber": "INV-0001",
+    "clientId": "uuid",
+    "projectId": "uuid",
+    "clientName": "Client Name",
+    "clientEmail": "client@example.com",
+    "clientAddress": "Client Address",
+    "issueDate": "2024-01-01",
+    "dueDate": "2024-01-31",
+    "status": "draft",
+    "items": [
+      {
+        "description": "Item description",
+        "quantity": 1,
+        "unitPrice": 1000.00
+      }
+    ],
+    "tax": 10,
+    "shipping": 0,
+    "discount": 0,
+    "amountPaid": 0,
+    "notes": "Thank you for your business!",
+    "terms": "Payment is due within 30 days.",
+    "customFields": []
+  }
+}
+
+docs {
+  # Create Invoice
+  
+  Create a new invoice.
+  
+  **Request Body:**
+  - `invoiceNumber` (string, required): Invoice number
+  - `clientId` (string, optional): Client UUID
+  - `projectId` (string, optional): Project UUID
+  - `clientName` (string, required): Client name
+  - `clientEmail` (string, required): Client email
+  - `clientAddress` (string, required): Client address
+  - `issueDate` (string, required): Issue date (ISO format)
+  - `dueDate` (string, required): Due date (ISO format)
+  - `status` (string, optional): Invoice status (draft, sent, paid, overdue)
+  - `items` (array, required): Invoice items
+    - `description` (string, required): Item description
+    - `quantity` (number, required): Item quantity
+    - `unitPrice` (number, required): Unit price
+  - `tax` (number, optional): Tax percentage
+  - `shipping` (number, optional): Shipping cost
+  - `discount` (number, optional): Discount amount
+  - `amountPaid` (number, optional): Amount already paid
+  - `notes` (string, optional): Invoice notes
+  - `terms` (string, optional): Terms and conditions
+  - `customFields` (array, optional): Custom fields
+  
+  **Response:** 201 Created
+  ```json
+  {
+    "id": "uuid",
+    "invoiceNumber": "INV-0001",
+    "clientName": "Client Name",
+    ...
+  }
+  ```
+}
+

@@ -1,34 +1,56 @@
 <template>
   <div class="bg-white shadow-lg rounded-lg p-8 h-full overflow-y-auto" style="font-family: 'Roboto', sans-serif;">
-    <!-- Header -->
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900 text-center mb-2">INVOICE</h1>
-      <div v-if="invoice.logoUrl" class="text-center mb-4">
-        <img :src="invoice.logoUrl" alt="Logo" class="h-16 mx-auto object-contain" />
+    <!-- Header: Company Logo + Name (left) and Invoice Number (right) -->
+    <div class="mb-8 flex items-center justify-between border-b border-gray-200 pb-4">
+      <!-- Left: Company Logo and Name -->
+      <div class="flex items-center gap-4">
+        <div v-if="invoice.logoUrl" class="flex-shrink-0">
+          <img 
+            :src="invoice.logoUrl" 
+            alt="Company Logo" 
+            class="h-16 w-auto object-contain"
+            @error="() => {}"
+          />
+        </div>
+        <div v-if="invoice.companyName">
+          <h2 class="text-2xl font-bold text-gray-900">{{ invoice.companyName }}</h2>
+        </div>
+      </div>
+      
+      <!-- Right: Invoice Number -->
+      <div class="text-right">
+        <p class="text-xs text-gray-500 mb-1">Invoice Number</p>
+        <p class="text-lg font-bold text-gray-900">{{ invoice.invoiceNumber || 'INV-0001' }}</p>
       </div>
     </div>
 
     <!-- Invoice Details -->
     <div class="grid grid-cols-2 gap-8 mb-8">
       <div>
-        <div class="border border-gray-200 rounded p-4 mb-4">
-          <p class="text-xs text-gray-500 mb-1">Invoice Number</p>
-          <p class="font-semibold">{{ invoice.invoiceNumber || 'INV-0001' }}</p>
-          <p class="text-xs text-gray-500 mt-3 mb-1">Issue Date</p>
+        <div class="p-4 mb-4">
+          <p class="text-xs text-gray-500 mb-1">Issue Date</p>
           <p>{{ formatDate(invoice.issueDate) || formatDate(new Date().toISOString()) }}</p>
           <p class="text-xs text-gray-500 mt-3 mb-1">Due Date</p>
           <p>{{ formatDate(invoice.dueDate) || 'Not set' }}</p>
-          <p class="text-xs text-gray-500 mt-3 mb-1">Status</p>
-          <span
-            :class="[
-              'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
-              getStatusClass(invoice.status)
-            ]"
-          >
-            {{ invoice.status || 'draft' }}
-          </span>
         </div>
       </div>
+    </div>
+
+    <!-- From and Bill To -->
+    <div class="grid grid-cols-2 gap-8 mb-8">
+      <!-- From Section (Left) -->
+      <div v-if="invoice.enableFrom && (invoice.companyName || invoice.companyAddress || invoice.companyEmail)">
+        <h3 class="text-sm font-semibold text-gray-900 mb-2">From:</h3>
+        <div class="text-sm text-gray-700">
+          <p v-if="invoice.companyName" class="font-medium">{{ invoice.companyName }}</p>
+          <p v-if="invoice.companyEmail" class="mt-1">{{ invoice.companyEmail }}</p>
+          <p v-if="invoice.companyPhone" class="mt-1">{{ invoice.companyPhone }}</p>
+          <p v-if="invoice.companyAddress" class="mt-1 whitespace-pre-line">{{ invoice.companyAddress }}</p>
+        </div>
+      </div>
+      <div v-else></div>
+
+      <!-- Bill To Section (Right) -->
       <div>
         <h3 class="text-sm font-semibold text-gray-900 mb-2">Bill To:</h3>
         <div class="text-sm text-gray-700">
@@ -55,9 +77,9 @@
           <tr v-for="(item, index) in invoice.items" :key="index">
             <td class="px-4 py-2 text-sm text-gray-900">{{ item.description || 'Item description' }}</td>
             <td class="px-4 py-2 text-sm text-gray-500 text-center">{{ item.quantity || 0 }}</td>
-            <td class="px-4 py-2 text-sm text-gray-500 text-right">${{ (item.unitPrice || 0).toFixed(2) }}</td>
+            <td class="px-4 py-2 text-sm text-gray-500 text-right">{{ formatCurrency(item.unitPrice || 0, currencySettings.value) }}</td>
             <td class="px-4 py-2 text-sm font-medium text-gray-900 text-right">
-              ${{ ((item.quantity || 0) * (item.unitPrice || 0)).toFixed(2) }}
+              {{ formatCurrency((item.quantity || 0) * (item.unitPrice || 0), currencySettings.value) }}
             </td>
           </tr>
           <tr v-if="!invoice.items || invoice.items.length === 0">
@@ -72,23 +94,33 @@
       <div class="w-64 space-y-2">
         <div class="flex justify-between text-sm">
           <span class="text-gray-600">Subtotal:</span>
-          <span class="text-gray-900">${{ subtotal.toFixed(2) }}</span>
+          <span class="text-gray-900">{{ formatCurrency(subtotal.value, currencySettings.value) }}</span>
         </div>
         <div v-if="invoice.enableTax !== false && taxAmount > 0" class="flex justify-between text-sm">
           <span class="text-gray-600">Tax:</span>
-          <span class="text-gray-900">${{ taxAmount.toFixed(2) }}</span>
+          <span class="text-gray-900">{{ formatCurrency(taxAmount.value, currencySettings.value) }}</span>
         </div>
         <div v-if="invoice.enableShipping && shipping > 0" class="flex justify-between text-sm">
           <span class="text-gray-600">Shipping:</span>
-          <span class="text-gray-900">${{ shipping.toFixed(2) }}</span>
+          <span class="text-gray-900">{{ formatCurrency(shipping.value, currencySettings.value) }}</span>
         </div>
         <div v-if="invoice.enableDiscount && discount > 0" class="flex justify-between text-sm">
           <span class="text-gray-600">Discount:</span>
-          <span class="text-gray-900">-${{ discount.toFixed(2) }}</span>
+          <span class="text-gray-900">-{{ formatCurrency(discount.value, currencySettings.value) }}</span>
         </div>
         <div class="flex justify-between text-lg font-bold pt-2 border-t border-gray-200">
           <span>Total:</span>
-          <span>${{ total.toFixed(2) }}</span>
+          <span>{{ formatCurrency(total.value, currencySettings.value) }}</span>
+        </div>
+        <div v-if="(invoice.amountPaid || 0) > 0" class="flex justify-between text-sm pt-2 border-t border-gray-200">
+          <span class="text-gray-600">Amount Paid:</span>
+          <span class="text-green-600 font-medium">{{ formatCurrency(amountPaid.value, currencySettings.value) }}</span>
+        </div>
+        <div v-if="(invoice.amountPaid || 0) > 0" class="flex justify-between text-sm font-semibold pt-2">
+          <span class="text-gray-700">Balance Due:</span>
+          <span :class="balanceDue > 0 ? 'text-red-600' : 'text-green-600'">
+            {{ formatCurrency(balanceDue.value, currencySettings.value) }}
+          </span>
         </div>
       </div>
     </div>
@@ -141,6 +173,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { formatCurrency } from '@/utils/currency'
 
 interface InvoicePreview {
   invoiceNumber?: string
@@ -154,6 +187,7 @@ interface InvoicePreview {
   tax?: number
   shipping?: number
   discount?: number
+  amountPaid?: number
   notes?: string
   terms?: string
   logoUrl?: string | null
@@ -163,6 +197,13 @@ interface InvoicePreview {
   enableSignature?: boolean
   signatureImageUrl?: string | null
   signatureText?: string | null
+  enableFrom?: boolean
+  companyName?: string | null
+  companyAddress?: string | null
+  companyEmail?: string | null
+  companyPhone?: string | null
+  currencyFormat?: string
+  currencySymbol?: string
 }
 
 const props = defineProps<{
@@ -171,22 +212,53 @@ const props = defineProps<{
 
 const subtotal = computed(() => {
   if (!props.invoice.items || props.invoice.items.length === 0) return 0
-  return props.invoice.items.reduce(
-    (sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0),
+  const result = props.invoice.items.reduce(
+    (sum, item) => {
+      const quantity = Number(item.quantity) || 0
+      const unitPrice = Number(item.unitPrice) || 0
+      const itemTotal = quantity * unitPrice
+      return sum + (isNaN(itemTotal) ? 0 : itemTotal)
+    },
     0
   )
+  return isNaN(result) ? 0 : result
 })
 
 const taxAmount = computed(() => {
-  return (subtotal.value * (props.invoice.tax || 0)) / 100
+  const tax = Number(props.invoice.tax) || 0
+  const result = (subtotal.value * tax) / 100
+  return isNaN(result) ? 0 : result
 })
 
-const shipping = computed(() => props.invoice.shipping || 0)
-const discount = computed(() => props.invoice.discount || 0)
+const shipping = computed(() => {
+  const result = Number(props.invoice.shipping) || 0
+  return isNaN(result) ? 0 : result
+})
+
+const discount = computed(() => {
+  const result = Number(props.invoice.discount) || 0
+  return isNaN(result) ? 0 : result
+})
+
+const amountPaid = computed(() => {
+  const result = Number(props.invoice.amountPaid) || 0
+  return isNaN(result) ? 0 : result
+})
 
 const total = computed(() => {
-  return subtotal.value + taxAmount.value + shipping.value - discount.value
+  const result = subtotal.value + taxAmount.value + shipping.value - discount.value
+  return isNaN(result) ? 0 : result
 })
+
+const balanceDue = computed(() => {
+  const result = total.value - amountPaid.value
+  return isNaN(result) ? 0 : result
+})
+
+const currencySettings = computed(() => ({
+  currencyFormat: props.invoice.currencyFormat,
+  currencySymbol: props.invoice.currencySymbol
+}))
 
 const formatDate = (dateString?: string): string => {
   if (!dateString) return ''

@@ -24,9 +24,16 @@ export interface InvoiceSettings {
   watermarkSize?: number
   watermarkColor?: string
   defaultFont?: string
+  currencyFormat?: string
+  currencySymbol?: string
   enableSignature?: boolean
   signatureImageUrl?: string | null
   signatureText?: string | null
+  enableFrom?: boolean
+  companyName?: string | null
+  companyAddress?: string | null
+  companyEmail?: string | null
+  companyPhone?: string | null
   customFields?: Array<{ label: string; type: string; required: boolean }>
 }
 

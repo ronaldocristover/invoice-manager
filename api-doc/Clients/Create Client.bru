@@ -1,0 +1,46 @@
+meta {
+  name: Create Client
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/clients
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Client Name",
+    "email": "client@example.com",
+    "phone": "+1 (555) 123-4567",
+    "address": "Client Address"
+  }
+}
+
+docs {
+  # Create Client
+  
+  Create a new client.
+  
+  **Request Body:**
+  - `name` (string, required): Client name
+  - `email` (string, required): Client email
+  - `phone` (string, optional): Client phone
+  - `address` (string, optional): Client address
+  
+  **Response:** 201 Created
+  ```json
+  {
+    "id": "uuid",
+    "name": "Client Name",
+    "email": "client@example.com",
+    "phone": "+1 (555) 123-4567",
+    "address": "Client Address",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+  ```
+}
+

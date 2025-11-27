@@ -18,6 +18,87 @@
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Left Column -->
         <div class="space-y-6">
+          <!-- Company Information -->
+          <div class="bg-white shadow-md rounded-lg p-6">
+            <div class="flex items-center mb-4 pb-3 border-b border-gray-200">
+              <div class="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+              <h2 class="text-lg font-semibold text-gray-900">Company Information (From)</h2>
+            </div>
+            <div class="space-y-4">
+              <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div class="flex-1">
+                  <label class="text-sm font-medium text-gray-700">Enable From Section</label>
+                  <p class="text-xs text-gray-500 mt-0.5">Show/hide company information (From section) on invoices</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input
+                    v-model="form.enableFrom"
+                    type="checkbox"
+                    class="sr-only peer"
+                  />
+                  <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              <div v-if="form.enableFrom" class="space-y-4 pt-4 border-t border-gray-200">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Company Name
+                </label>
+                <input
+                  v-model="form.companyName"
+                  type="text"
+                  placeholder="Your Company Name"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p class="mt-1 text-xs text-gray-500">
+                  Company name that appears on invoices (From section)
+                </p>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Company Email
+                </label>
+                <input
+                  v-model="form.companyEmail"
+                  type="email"
+                  placeholder="company@example.com"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Company Phone
+                </label>
+                <input
+                  v-model="form.companyPhone"
+                  type="tel"
+                  placeholder="+1 (555) 123-4567"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Company Address
+                </label>
+                <textarea
+                  v-model="form.companyAddress"
+                  rows="3"
+                  placeholder="123 Main St, City, State, ZIP"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                ></textarea>
+              </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Invoice Numbering & Branding -->
           <div class="bg-white shadow-md rounded-lg p-6">
             <div class="flex items-center mb-4 pb-3 border-b border-gray-200">
@@ -137,6 +218,57 @@
                 <p class="mt-1 text-xs text-gray-500">
                   Default font family for PDF invoices
                 </p>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Currency Format
+                  </label>
+                  <select
+                    v-model="form.currencyFormat"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="USD">USD - US Dollar ($)</option>
+                    <option value="EUR">EUR - Euro (€)</option>
+                    <option value="GBP">GBP - British Pound (£)</option>
+                    <option value="JPY">JPY - Japanese Yen (¥)</option>
+                    <option value="CNY">CNY - Chinese Yuan (¥)</option>
+                    <option value="INR">INR - Indian Rupee (₹)</option>
+                    <option value="AUD">AUD - Australian Dollar (A$)</option>
+                    <option value="CAD">CAD - Canadian Dollar (C$)</option>
+                    <option value="SGD">SGD - Singapore Dollar (S$)</option>
+                    <option value="HKD">HKD - Hong Kong Dollar (HK$)</option>
+                    <option value="BRL">BRL - Brazilian Real (R$)</option>
+                    <option value="MXN">MXN - Mexican Peso ($)</option>
+                    <option value="ZAR">ZAR - South African Rand (R)</option>
+                    <option value="KRW">KRW - South Korean Won (₩)</option>
+                    <option value="THB">THB - Thai Baht (฿)</option>
+                    <option value="IDR">IDR - Indonesian Rupiah (Rp)</option>
+                    <option value="PHP">PHP - Philippine Peso (₱)</option>
+                    <option value="MYR">MYR - Malaysian Ringgit (RM)</option>
+                    <option value="NZD">NZD - New Zealand Dollar (NZ$)</option>
+                  </select>
+                  <p class="mt-1 text-xs text-gray-500">
+                    Currency format for all invoices
+                  </p>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Currency Symbol
+                  </label>
+                  <input
+                    v-model="form.currencySymbol"
+                    type="text"
+                    maxlength="5"
+                    placeholder="$"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p class="mt-1 text-xs text-gray-500">
+                    Custom currency symbol (e.g., $, €, £, ¥). Leave empty to use default for selected format.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -529,6 +661,106 @@
         </button>
       </div>
     </form>
+
+    <!-- Confirmation Modal -->
+    <div
+      v-if="showConfirmModal"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      @click.self="showConfirmModal = false"
+    >
+      <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="p-6">
+          <div class="flex items-center mb-4">
+            <div class="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900">Confirm Update</h3>
+          </div>
+          <p class="text-gray-600 mb-6">
+            Are you sure you want to update the invoice settings? This will affect all future invoices.
+          </p>
+          <div class="flex justify-end space-x-3">
+            <button
+              @click="showConfirmModal = false"
+              class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              @click="confirmUpdate"
+              :disabled="submitting"
+              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 font-medium"
+            >
+              {{ submitting ? 'Updating...' : 'Confirm Update' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div
+      v-if="showSuccessModal"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      @click.self="showSuccessModal = false"
+    >
+      <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="p-6">
+          <div class="flex items-center mb-4">
+            <div class="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
+              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900">Success</h3>
+          </div>
+          <p class="text-gray-600 mb-6">
+            Settings saved successfully!
+          </p>
+          <div class="flex justify-end">
+            <button
+              @click="handleSuccessClose"
+              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div
+      v-if="showErrorModal"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      @click.self="showErrorModal = false"
+    >
+      <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="p-6">
+          <div class="flex items-center mb-4">
+            <div class="flex-shrink-0 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mr-3">
+              <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900">Error</h3>
+          </div>
+          <p class="text-gray-600 mb-6">
+            {{ errorMessage || 'Failed to save settings. Please try again.' }}
+          </p>
+          <div class="flex justify-end">
+            <button
+              @click="showErrorModal = false"
+              class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 font-medium"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -542,6 +774,10 @@ const router = useRouter()
 const loading = ref(true)
 const error = ref<string | null>(null)
 const submitting = ref(false)
+const showConfirmModal = ref(false)
+const showSuccessModal = ref(false)
+const showErrorModal = ref(false)
+const errorMessage = ref<string | null>(null)
 
 const form = ref<InvoiceSettings>({
   invoicePrefix: 'INV',
@@ -559,9 +795,16 @@ const form = ref<InvoiceSettings>({
   watermarkSize: 50,
   watermarkColor: '#CCCCCC',
   defaultFont: 'Helvetica',
+  currencyFormat: 'USD',
+  currencySymbol: '$',
   enableSignature: false,
   signatureImageUrl: null,
   signatureText: null,
+  enableFrom: false,
+  companyName: null,
+  companyAddress: null,
+  companyEmail: null,
+  companyPhone: null,
   customFields: []
 })
 
@@ -603,10 +846,16 @@ const loadSettings = async () => {
   }
 }
 
-const handleSubmit = async () => {
+const handleSubmit = () => {
+  // Show confirmation modal
+  showConfirmModal.value = true
+}
+
+const confirmUpdate = async () => {
   try {
     submitting.value = true
     error.value = null
+    showConfirmModal.value = false
     
     // Clean up empty custom fields
     if (form.value.customFields) {
@@ -616,15 +865,20 @@ const handleSubmit = async () => {
     }
 
     await settingsApi.update(form.value)
-    alert('Settings saved successfully!')
-    router.push('/')
+    showSuccessModal.value = true
   } catch (err) {
     error.value = 'Failed to save settings'
+    errorMessage.value = 'Failed to save settings. Please try again.'
     console.error(err)
-    alert('Failed to save settings. Please try again.')
+    showErrorModal.value = true
   } finally {
     submitting.value = false
   }
+}
+
+const handleSuccessClose = () => {
+  showSuccessModal.value = false
+  router.push('/')
 }
 
 onMounted(() => {

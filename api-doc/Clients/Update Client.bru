@@ -1,0 +1,49 @@
+meta {
+  name: Update Client
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/clients/:id
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 
+}
+
+body:json {
+  {
+    "name": "Updated Client Name",
+    "email": "updated@example.com",
+    "phone": "+1 (555) 987-6543",
+    "address": "Updated Address"
+  }
+}
+
+docs {
+  # Update Client
+  
+  Update an existing client.
+  
+  **Path Parameters:**
+  - `id` (string, required): Client UUID
+  
+  **Request Body:** All fields optional
+  - `name` (string): Client name
+  - `email` (string): Client email
+  - `phone` (string): Client phone
+  - `address` (string): Client address
+  
+  **Response:** 200 OK
+  ```json
+  {
+    "id": "uuid",
+    "name": "Updated Client Name",
+    ...
+  }
+  ```
+}
+

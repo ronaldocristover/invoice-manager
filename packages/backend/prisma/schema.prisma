@@ -60,6 +60,7 @@ model Invoice {
   shipping      Float         @default(0)
   discount      Float         @default(0)
   total         Float
+  amountPaid    Float         @default(0)
   notes         String?
   terms         String?
   customFields  Json?
@@ -101,9 +102,17 @@ model InvoiceSettings {
   watermarkSize     Int      @default(50)
   watermarkColor    String   @default("#CCCCCC")
   defaultFont       String   @default("Helvetica")
+  currencyFormat    String   @default("USD")
+  currencySymbol    String   @default("$")
   enableSignature   Boolean  @default(false)
   signatureImageUrl String?
   signatureText     String?
+  // Company/From information
+  enableFrom        Boolean  @default(false)
+  companyName       String?
+  companyAddress    String?
+  companyEmail      String?
+  companyPhone      String?
   customFields      Json?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt

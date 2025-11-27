@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+import logger from './logger.js'
 
 // Singleton pattern for PrismaClient to avoid multiple connections
 const globalForPrisma = globalThis as unknown as {
@@ -24,26 +25,30 @@ if (process.env.NODE_ENV !== 'production') {
 // Test database connection on startup
 prisma.$connect()
   .then(() => {
-    console.log('✅ Database connected successfully')
+    logger.info('Database connected successfully')
   })
   .catch((error) => {
-    console.error('❌ Database connection failed:', error.message)
-    console.error('Please check your DATABASE_URL in .env file')
-    console.error('Current DATABASE_URL:', process.env.DATABASE_URL ? 'Set' : 'Not set')
+    logger.error('Database connection failed', {
+      error: error.message,
+      databaseUrl: process.env.DATABASE_URL ? 'Set' : 'Not set'
+    })
   })
 
 // Graceful shutdown
 process.on('beforeExit', async () => {
   await prisma.$disconnect()
+  logger.info('Prisma client disconnected')
 })
 
 process.on('SIGINT', async () => {
   await prisma.$disconnect()
+  logger.info('Prisma client disconnected on SIGINT')
   process.exit(0)
 })
 
 process.on('SIGTERM', async () => {
   await prisma.$disconnect()
+  logger.info('Prisma client disconnected on SIGTERM')
   process.exit(0)
 })
 

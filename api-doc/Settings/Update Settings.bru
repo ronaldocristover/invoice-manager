@@ -1,0 +1,85 @@
+meta {
+  name: Update Settings
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{baseUrl}}/api/settings
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "invoicePrefix": "INV",
+    "invoiceTheme": "default",
+    "logoUrl": "https://example.com/logo.png",
+    "enableTax": true,
+    "enableShipping": false,
+    "enableDiscount": true,
+    "defaultTax": 10,
+    "defaultNotes": "Thank you for your business!",
+    "defaultTerms": "Payment is due within 30 days.",
+    "pdfNameFormat": "invoice-{invoiceNumber}",
+    "enableWatermark": false,
+    "watermarkText": null,
+    "watermarkSize": 50,
+    "watermarkColor": "#CCCCCC",
+    "defaultFont": "Helvetica",
+    "enableSignature": true,
+    "signatureImageUrl": null,
+    "signatureText": "John Doe, Director",
+    "enableFrom": true,
+    "companyName": "Acme Corporation",
+    "companyAddress": "123 Business Street",
+    "companyEmail": "billing@acmecorp.com",
+    "companyPhone": "+1 (555) 123-4567",
+    "currencyFormat": "USD",
+    "currencySymbol": "$",
+    "customFields": []
+  }
+}
+
+docs {
+  # Update Settings
+  
+  Update invoice settings.
+  
+  **Request Body:** All fields are optional
+  - `invoicePrefix` (string): Invoice number prefix
+  - `invoiceTheme` (string): Invoice theme
+  - `logoUrl` (string): Company logo URL
+  - `enableTax` (boolean): Enable tax field
+  - `enableShipping` (boolean): Enable shipping field
+  - `enableDiscount` (boolean): Enable discount field
+  - `defaultTax` (number): Default tax percentage
+  - `defaultNotes` (string): Default notes
+  - `defaultTerms` (string): Default terms
+  - `pdfNameFormat` (string): PDF filename format
+  - `enableWatermark` (boolean): Enable watermark
+  - `watermarkText` (string): Watermark text
+  - `watermarkSize` (number): Watermark size
+  - `watermarkColor` (string): Watermark color (hex)
+  - `defaultFont` (string): Default font
+  - `enableSignature` (boolean): Enable signature
+  - `signatureImageUrl` (string): Signature image URL
+  - `signatureText` (string): Signature text
+  - `enableFrom` (boolean): Enable "From" section
+  - `companyName` (string): Company name
+  - `companyAddress` (string): Company address
+  - `companyEmail` (string): Company email
+  - `companyPhone` (string): Company phone
+  - `currencyFormat` (string): Currency format (USD, EUR, GBP, JPY, IDR)
+  - `currencySymbol` (string): Currency symbol
+  - `customFields` (array): Custom fields
+  
+  **Response:** 200 OK
+  ```json
+  {
+    "id": "uuid",
+    ...
+  }
+  ```
+}
+

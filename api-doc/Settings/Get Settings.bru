@@ -1,0 +1,51 @@
+meta {
+  name: Get Settings
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/settings
+  body: none
+  auth: none
+}
+
+docs {
+  # Get Settings
+  
+  Retrieve invoice settings.
+  
+  **Response:**
+  ```json
+  {
+    "id": "uuid",
+    "invoicePrefix": "INV",
+    "invoiceTheme": "default",
+    "logoUrl": "https://example.com/logo.png",
+    "enableTax": true,
+    "enableShipping": false,
+    "enableDiscount": true,
+    "defaultTax": 10,
+    "defaultNotes": "Thank you for your business!",
+    "defaultTerms": "Payment is due within 30 days.",
+    "pdfNameFormat": "invoice-{invoiceNumber}",
+    "enableWatermark": false,
+    "watermarkText": null,
+    "watermarkSize": 50,
+    "watermarkColor": "#CCCCCC",
+    "defaultFont": "Helvetica",
+    "enableSignature": true,
+    "signatureImageUrl": null,
+    "signatureText": "John Doe, Director",
+    "enableFrom": true,
+    "companyName": "Acme Corporation",
+    "companyAddress": "123 Business Street",
+    "companyEmail": "billing@acmecorp.com",
+    "companyPhone": "+1 (555) 123-4567",
+    "currencyFormat": "USD",
+    "currencySymbol": "$",
+    "customFields": []
+  }
+  ```
+}
+

@@ -1,0 +1,33 @@
+meta {
+  name: Get All Clients
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/clients
+  body: none
+  auth: none
+}
+
+docs {
+  # Get All Clients
+  
+  Retrieve all clients.
+  
+  **Response:**
+  ```json
+  [
+    {
+      "id": "uuid",
+      "name": "Client Name",
+      "email": "client@example.com",
+      "phone": "+1 (555) 123-4567",
+      "address": "Client Address",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    }
+  ]
+  ```
+}
+

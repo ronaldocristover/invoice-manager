@@ -1,0 +1,73 @@
+meta {
+  name: Get All Invoices
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/invoices?page=1&limit=10&invoiceNumber=&createdDate=&clientId=&projectId=
+  body: none
+  auth: none
+}
+
+params:query {
+  page: 1
+  limit: 10
+  invoiceNumber: 
+  createdDate: 
+  clientId: 
+  projectId: 
+}
+
+docs {
+  # Get All Invoices
+  
+  Retrieve a paginated list of invoices with optional filtering.
+  
+  **Query Parameters:**
+  - `page` (number): Page number (default: 1)
+  - `limit` (number): Items per page (default: 10)
+  - `invoiceNumber` (string, optional): Filter by invoice number
+  - `createdDate` (string, optional): Filter by creation date (ISO format)
+  - `clientId` (string, optional): Filter by client ID
+  - `projectId` (string, optional): Filter by project ID
+  
+  **Response:**
+  ```json
+  {
+    "success": true,
+    "data": [
+      {
+        "id": "uuid",
+        "invoiceNumber": "INV-0001",
+        "clientName": "Client Name",
+        "clientEmail": "client@example.com",
+        "clientAddress": "Client Address",
+        "issueDate": "2024-01-01T00:00:00.000Z",
+        "dueDate": "2024-01-31T00:00:00.000Z",
+        "status": "draft",
+        "items": [...],
+        "subtotal": 1000.00,
+        "tax": 100.00,
+        "shipping": 0,
+        "discount": 0,
+        "total": 1100.00,
+        "amountPaid": 0,
+        "notes": null,
+        "terms": null,
+        "createdAt": "2024-01-01T00:00:00.000Z",
+        "updatedAt": "2024-01-01T00:00:00.000Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 100,
+      "totalPages": 10,
+      "hasNextPage": true,
+      "hasPrevPage": false
+    }
+  }
+  ```
+}
+

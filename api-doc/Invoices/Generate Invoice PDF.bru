@@ -1,0 +1,28 @@
+meta {
+  name: Generate Invoice PDF
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/invoices/:id/pdf
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 
+}
+
+docs {
+  # Generate Invoice PDF
+  
+  Generate and download invoice as PDF.
+  
+  **Path Parameters:**
+  - `id` (string, required): Invoice UUID
+  
+  **Response:** PDF file (application/pdf)
+  - Content-Disposition: attachment; filename=invoice-{invoiceNumber}.pdf
+}
+

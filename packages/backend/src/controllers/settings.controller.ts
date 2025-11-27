@@ -1,6 +1,44 @@
 import { Request, Response } from 'express'
 import { prisma } from '../lib/prisma.js'
 
+// Helper function to get currency symbol based on format
+function getCurrencySymbol(format: string): string {
+  const symbols: Record<string, string> = {
+    USD: '$',
+    EUR: '€',
+    GBP: '£',
+    JPY: '¥',
+    CNY: '¥',
+    INR: '₹',
+    AUD: 'A$',
+    CAD: 'C$',
+    CHF: 'CHF',
+    SEK: 'kr',
+    NOK: 'kr',
+    DKK: 'kr',
+    PLN: 'zł',
+    RUB: '₽',
+    BRL: 'R$',
+    MXN: '$',
+    ZAR: 'R',
+    SGD: 'S$',
+    HKD: 'HK$',
+    KRW: '₩',
+    THB: '฿',
+    IDR: 'Rp',
+    PHP: '₱',
+    MYR: 'RM',
+    VND: '₫',
+    TRY: '₺',
+    AED: 'د.إ',
+    SAR: '﷼',
+    ILS: '₪',
+    NZD: 'NZ$'
+  }
+
+  return symbols[format.toUpperCase()] || '$'
+}
+
 export const getSettings = async (req: Request, res: Response): Promise<void> => {
   try {
     let settings = await prisma.invoiceSettings.findFirst()
@@ -36,9 +74,16 @@ export const getSettings = async (req: Request, res: Response): Promise<void> =>
       watermarkSize: (settings as any).watermarkSize,
       watermarkColor: (settings as any).watermarkColor,
       defaultFont: (settings as any).defaultFont,
+      currencyFormat: (settings as any).currencyFormat,
+      currencySymbol: (settings as any).currencySymbol,
       enableSignature: (settings as any).enableSignature,
       signatureImageUrl: (settings as any).signatureImageUrl,
       signatureText: (settings as any).signatureText,
+      enableFrom: (settings as any).enableFrom,
+      companyName: (settings as any).companyName,
+      companyAddress: (settings as any).companyAddress,
+      companyEmail: (settings as any).companyEmail,
+      companyPhone: (settings as any).companyPhone,
       customFields: settings.customFields ? (settings.customFields as any) : []
     })
   } catch (error) {
@@ -65,9 +110,16 @@ export const updateSettings = async (req: Request, res: Response): Promise<void>
       watermarkSize,
       watermarkColor,
       defaultFont,
+      currencyFormat,
+      currencySymbol,
       enableSignature,
       signatureImageUrl,
       signatureText,
+      enableFrom,
+      companyName,
+      companyAddress,
+      companyEmail,
+      companyPhone,
       customFields
     } = req.body
 
@@ -89,9 +141,22 @@ export const updateSettings = async (req: Request, res: Response): Promise<void>
     if (watermarkSize !== undefined) updateData.watermarkSize = watermarkSize
     if (watermarkColor !== undefined) updateData.watermarkColor = watermarkColor
     if (defaultFont !== undefined) updateData.defaultFont = defaultFont
+    if (currencyFormat !== undefined) {
+      updateData.currencyFormat = currencyFormat
+      // Auto-update currency symbol if not provided
+      if (currencySymbol === undefined) {
+        updateData.currencySymbol = getCurrencySymbol(currencyFormat)
+      }
+    }
+    if (currencySymbol !== undefined) updateData.currencySymbol = currencySymbol
     if (enableSignature !== undefined) updateData.enableSignature = enableSignature
     if (signatureImageUrl !== undefined) updateData.signatureImageUrl = signatureImageUrl
     if (signatureText !== undefined) updateData.signatureText = signatureText
+    if (enableFrom !== undefined) updateData.enableFrom = enableFrom
+    if (companyName !== undefined) updateData.companyName = companyName
+    if (companyAddress !== undefined) updateData.companyAddress = companyAddress
+    if (companyEmail !== undefined) updateData.companyEmail = companyEmail
+    if (companyPhone !== undefined) updateData.companyPhone = companyPhone
     if (customFields !== undefined) {
       updateData.customFields = customFields
     }
@@ -119,9 +184,16 @@ export const updateSettings = async (req: Request, res: Response): Promise<void>
           watermarkSize: watermarkSize || 50,
           watermarkColor: watermarkColor || '#CCCCCC',
           defaultFont: defaultFont || 'Helvetica',
+          currencyFormat: currencyFormat || 'USD',
+          currencySymbol: currencySymbol || '$',
           enableSignature: enableSignature !== undefined ? enableSignature : false,
           signatureImageUrl: signatureImageUrl || null,
           signatureText: signatureText || null,
+          enableFrom: enableFrom !== undefined ? enableFrom : false,
+          companyName: companyName || null,
+          companyAddress: companyAddress || null,
+          companyEmail: companyEmail || null,
+          companyPhone: companyPhone || null,
           customFields: customFields || null
         }
       })
@@ -144,9 +216,16 @@ export const updateSettings = async (req: Request, res: Response): Promise<void>
       watermarkSize: (settings as any).watermarkSize,
       watermarkColor: (settings as any).watermarkColor,
       defaultFont: (settings as any).defaultFont,
+      currencyFormat: (settings as any).currencyFormat,
+      currencySymbol: (settings as any).currencySymbol,
       enableSignature: (settings as any).enableSignature,
       signatureImageUrl: (settings as any).signatureImageUrl,
       signatureText: (settings as any).signatureText,
+      enableFrom: (settings as any).enableFrom,
+      companyName: (settings as any).companyName,
+      companyAddress: (settings as any).companyAddress,
+      companyEmail: (settings as any).companyEmail,
+      companyPhone: (settings as any).companyPhone,
       customFields: settings.customFields ? (settings.customFields as any) : []
     })
   } catch (error) {

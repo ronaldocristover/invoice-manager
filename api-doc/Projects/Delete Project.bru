@@ -1,0 +1,27 @@
+meta {
+  name: Delete Project
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/api/projects/:id
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 
+}
+
+docs {
+  # Delete Project
+  
+  Delete a project by ID.
+  
+  **Path Parameters:**
+  - `id` (string, required): Project UUID
+  
+  **Response:** 204 No Content
+}
+

@@ -55,7 +55,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 interface BreadcrumbItem {
   label: string
@@ -63,116 +63,124 @@ interface BreadcrumbItem {
 }
 
 const route = useRoute()
+const router = useRouter()
+
+// Map route names to breadcrumb labels
+const routeLabels: Record<string, string> = {
+  Home: 'Invoices',
+  CreateInvoice: 'Create Invoice',
+  InvoiceDetail: 'Invoice Details',
+  EditInvoice: 'Edit Invoice',
+  Settings: 'Settings',
+  Clients: 'Clients',
+  CreateClient: 'Create Client',
+  ClientDetail: 'Client Details',
+  EditClient: 'Edit Client',
+  Projects: 'Projects',
+  CreateProject: 'Create Project',
+  ProjectDetail: 'Project Details',
+  EditProject: 'Edit Project'
+}
+
+// Map route names to parent route names
+const routeParents: Record<string, string> = {
+  CreateInvoice: 'Home',
+  InvoiceDetail: 'Home',
+  EditInvoice: 'InvoiceDetail',
+  Settings: 'Home',
+  Clients: 'Home',
+  CreateClient: 'Clients',
+  ClientDetail: 'Clients',
+  EditClient: 'ClientDetail',
+  Projects: 'Home',
+  CreateProject: 'Projects',
+  ProjectDetail: 'Projects',
+  EditProject: 'ProjectDetail'
+}
 
 const breadcrumbs = computed<BreadcrumbItem[]>(() => {
   const crumbs: BreadcrumbItem[] = []
+  const routeName = route.name as string
   const path = route.path
-  const name = route.name as string
-  const params = route.params
-
-  // Map route names to breadcrumb labels
-  const routeLabels: Record<string, string> = {
-    Home: 'Invoices',
-    CreateInvoice: 'Create Invoice',
-    InvoiceDetail: 'Invoice Details',
-    EditInvoice: 'Edit Invoice',
-    Settings: 'Settings',
-    Clients: 'Clients',
-    CreateClient: 'Create Client',
-    ClientDetail: 'Client Details',
-    EditClient: 'Edit Client',
-    Projects: 'Projects',
-    CreateProject: 'Create Project',
-    ProjectDetail: 'Project Details',
-    EditProject: 'Edit Project'
-  }
 
   // Handle root path
   if (path === '/') {
     return []
   }
 
-  // Split path and build breadcrumbs
-  const segments = path.split('/').filter(Boolean)
+  // Map route names to their paths (for parent routes)
+  const routePaths: Record<string, string> = {
+    Home: '/',
+    Clients: '/clients',
+    Projects: '/projects',
+    Settings: '/settings',
+    CreateInvoice: '/create',
+    CreateClient: '/clients/create',
+    CreateProject: '/projects/create'
+  }
 
-  // Build breadcrumbs based on path segments
-  let currentPath = ''
-  segments.forEach((segment, index) => {
-    currentPath += `/${segment}`
+  // Build breadcrumbs based on route hierarchy
+  const buildBreadcrumbs = (currentRouteName: string, visited: Set<string>): void => {
+    if (visited.has(currentRouteName)) return // Prevent infinite loops
+    visited.add(currentRouteName)
 
-    // Skip numeric IDs and use dynamic labels
-    if (segment.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-      // This is a UUID, get the label from route meta or params
-      const parentSegment = segments[index - 1]
+    const parentName = routeParents[currentRouteName]
+    
+    if (parentName) {
+      // Add parent first (recursively)
+      buildBreadcrumbs(parentName, visited)
       
-      if (parentSegment === 'invoice') {
-        // Try to get invoice number from params or use generic label
-        const label = params.invoiceNumber as string || 'Invoice Details'
-        crumbs.push({ label, to: currentPath })
-      } else if (parentSegment === 'clients') {
-        // Try to get client name from params or use generic label
-        const label = params.clientName as string || 'Client Details'
-        crumbs.push({ label, to: currentPath })
-      } else if (parentSegment === 'projects') {
-        // Try to get project name from params or use generic label
-        const label = params.projectName as string || 'Project Details'
-        crumbs.push({ label, to: currentPath })
-      } else {
-        crumbs.push({ label: 'Details', to: currentPath })
+      // Get parent path
+      let parentPath = routePaths[parentName]
+      
+      // For detail routes, construct path with params
+      if (!parentPath) {
+        if (parentName === 'InvoiceDetail' && route.params.id) {
+          parentPath = `/invoice/${route.params.id}`
+        } else if (parentName === 'ClientDetail' && route.params.id) {
+          parentPath = `/clients/${route.params.id}`
+        } else if (parentName === 'ProjectDetail' && route.params.id) {
+          parentPath = `/projects/${route.params.id}`
+        } else {
+          parentPath = '/'
+        }
       }
-    } else {
-      // Regular segment
-      const routeName = getRouteNameFromPath(currentPath, segments, index)
-      const label = routeLabels[routeName] || formatLabel(segment)
       
-      // Don't add link for the last segment (current page)
-      const isLast = index === segments.length - 1
       crumbs.push({
-        label,
-        to: isLast ? undefined : currentPath
+        label: routeLabels[parentName] || parentName,
+        to: parentPath
       })
     }
-  })
+  }
+
+  // Build parent breadcrumbs
+  if (routeName) {
+    buildBreadcrumbs(routeName, new Set())
+  }
+
+  // Add current page (last breadcrumb, no link)
+  if (routeName && routeLabels[routeName]) {
+    // For detail pages, try to get dynamic label from route params or meta
+    let currentLabel = routeLabels[routeName]
+    
+    // Try to get dynamic label from route meta or params
+    if (route.meta?.breadcrumbLabel) {
+      currentLabel = route.meta.breadcrumbLabel as string
+    } else if (routeName === 'InvoiceDetail' && route.params.id) {
+      // For invoice detail, we could fetch invoice number, but for now use generic
+      currentLabel = 'Invoice Details'
+    } else if (routeName === 'ClientDetail' && route.params.id) {
+      currentLabel = 'Client Details'
+    } else if (routeName === 'ProjectDetail' && route.params.id) {
+      currentLabel = 'Project Details'
+    }
+    
+    crumbs.push({
+      label: currentLabel,
+      to: undefined // Current page, no link
+    })
+  }
 
   return crumbs
 })
-
-function getRouteNameFromPath(path: string, segments: string[], index: number): string {
-  // Try to match route name based on path structure
-  if (path === '/create') return 'CreateInvoice'
-  if (path === '/settings') return 'Settings'
-  if (path === '/clients') return 'Clients'
-  if (path === '/clients/create') return 'CreateClient'
-  if (path === '/projects') return 'Projects'
-  if (path === '/projects/create') return 'CreateProject'
-  
-  // Handle dynamic routes
-  if (segments[0] === 'invoice') {
-    if (segments[1] && segments[2] === 'edit') return 'EditInvoice'
-    if (segments[1]) return 'InvoiceDetail'
-    return 'CreateInvoice'
-  }
-  
-  if (segments[0] === 'clients') {
-    if (segments[1] && segments[2] === 'edit') return 'EditClient'
-    if (segments[1]) return 'ClientDetail'
-    return 'CreateClient'
-  }
-  
-  if (segments[0] === 'projects') {
-    if (segments[1] && segments[2] === 'edit') return 'EditProject'
-    if (segments[1]) return 'ProjectDetail'
-    return 'CreateProject'
-  }
-  
-  return ''
-}
-
-function formatLabel(segment: string): string {
-  return segment
-    .split('-')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
-}
 </script>
-

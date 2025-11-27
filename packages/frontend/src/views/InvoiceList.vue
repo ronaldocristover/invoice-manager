@@ -102,13 +102,13 @@
           <thead class="bg-gray-50">
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Created Date
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Invoice Number
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Client Name
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Created Date
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Due Date
@@ -134,6 +134,14 @@
                 class="px-6 py-4 whitespace-nowrap cursor-pointer"
                 @click="$router.push(`/invoice/${invoice.id}`)"
               >
+                <div class="text-sm text-gray-500">
+                  {{ formatDate(invoice.createdAt) }}
+                </div>
+              </td>
+              <td 
+                class="px-6 py-4 whitespace-nowrap cursor-pointer"
+                @click="$router.push(`/invoice/${invoice.id}`)"
+              >
                 <div class="text-sm font-medium text-gray-900">
                   {{ invoice.invoiceNumber }}
                 </div>
@@ -143,14 +151,6 @@
                 @click="$router.push(`/invoice/${invoice.id}`)"
               >
                 <div class="text-sm text-gray-900">{{ invoice.clientName }}</div>
-              </td>
-              <td 
-                class="px-6 py-4 whitespace-nowrap cursor-pointer"
-                @click="$router.push(`/invoice/${invoice.id}`)"
-              >
-                <div class="text-sm text-gray-500">
-                  {{ formatDate(invoice.createdAt) }}
-                </div>
               </td>
               <td 
                 class="px-6 py-4 whitespace-nowrap cursor-pointer"
@@ -350,7 +350,7 @@ const getStatusClass = (status: Invoice['status']): string => {
 }
 
 const formatStatus = (status: Invoice['status']): string => {
-  return status.charAt(0).toUpperCase() + status.slice(1)
+  return status.toUpperCase()
 }
 
 const formatDate = (dateString: string): string => {

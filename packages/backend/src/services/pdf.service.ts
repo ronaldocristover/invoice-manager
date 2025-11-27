@@ -1,5 +1,5 @@
 import PDFDocument from 'pdfkit'
-import type { Invoice, InvoiceItem, InvoiceStatus } from '@prisma/client'
+import type { Invoice, InvoiceItem } from '@prisma/client'
 
 interface InvoiceWithItems extends Invoice {
   items: InvoiceItem[]
@@ -19,9 +19,16 @@ interface InvoiceSettings {
   watermarkSize?: number
   watermarkColor?: string
   defaultFont?: string
+  currencyFormat?: string
+  currencySymbol?: string
   enableSignature?: boolean
   signatureImageUrl?: string | null
   signatureText?: string | null
+  enableFrom?: boolean
+  companyName?: string | null
+  companyAddress?: string | null
+  companyEmail?: string | null
+  companyPhone?: string | null
 }
 
 interface CustomField {
@@ -39,6 +46,27 @@ const formatDateForPdf = (date: Date): string => {
   const month = monthNames[date.getMonth()]
   const year = date.getFullYear()
   return `${day} ${month} ${year}`
+}
+
+// Helper function to format currency
+const formatCurrency = (amount: number, settings?: InvoiceSettings): string => {
+  const symbol = settings?.currencySymbol || '$'
+  const format = settings?.currencyFormat || 'USD'
+  const formattedAmount = Math.abs(amount).toFixed(2)
+  const parts = formattedAmount.split('.')
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  const sign = amount < 0 ? '-' : ''
+
+  if (format === 'EUR') {
+    return `${sign}${parts.join(',')} ${symbol}`
+  } else if (format === 'GBP') {
+    return `${sign}${symbol}${parts.join('.')}`
+  } else if (format === 'JPY') {
+    return `${sign}${symbol}${Math.round(Math.abs(amount))}` // JPY typically has no decimals
+  } else if (format === 'IDR') {
+    return `${sign}${symbol} ${parts.join(',')}`
+  }
+  return `${sign}${symbol}${parts.join('.')}` // Default USD
 }
 
 export const generatePdf = async (
@@ -84,61 +112,131 @@ export const generatePdf = async (
           : [0.8, 0.8, 0.8] // Default gray
       }
 
-      // Header with logo if available - matching preview
-      let headerY = 50
+      // Header: Company Logo + Name (left) and Invoice Number (right)
+      const headerY = 50
+      const pageWidth = doc.page.width
+      const margin = 50
+      const headerHeight = 60
+
+      // Left side: Company Logo and Name
+      let leftHeaderX = margin
+      let leftHeaderY = headerY
+
       if (settings?.logoUrl) {
-        // Note: In production, you'd need to fetch and embed the image
-        // For now, we'll just add space for it
-        headerY += 30
+        try {
+          // Check if it's a URL or file path
+          const isUrl = settings.logoUrl.startsWith('http://') || settings.logoUrl.startsWith('https://')
+
+          if (!isUrl) {
+            // File path - try to load image
+            try {
+              doc.image(settings.logoUrl, leftHeaderX, leftHeaderY, {
+                width: 60,
+                height: 40,
+                fit: [60, 40]
+              })
+              leftHeaderX += 70
+            } catch (imageError) {
+              // If image loading fails, don't show anything (skip logo)
+            }
+          }
+          // If URL, skip logo (don't show placeholder)
+        } catch (error) {
+          // If logo fails, just continue without it
+        }
       }
 
-      // Invoice title - centered
+      // Company Name next to logo
+      if (settings?.companyName) {
+        doc
+          .fontSize(18)
+          .font(defaultFont.includes('Bold') ? defaultFont : `${defaultFont}-Bold`)
+          .fillColor(colors.primary)
+          .text(settings.companyName, leftHeaderX, leftHeaderY + 10, {
+            width: 300,
+            align: 'left'
+          })
+          .fillColor('#000000')
+      }
+
+      // Right side: Invoice Number
+      const invoiceNumberX = pageWidth - margin - 200
       doc
-        .fontSize(28)
+        .fontSize(12)
+        .font(defaultFont)
+        .fillColor('#666666')
+        .text('Invoice Number:', invoiceNumberX, leftHeaderY, { width: 200, align: 'right' })
+        .fontSize(16)
+        .font(defaultFont.includes('Bold') ? defaultFont : `${defaultFont}-Bold`)
         .fillColor(colors.primary)
-        .text('INVOICE', 50, headerY, { align: 'center', width: 500 })
+        .text(invoice.invoiceNumber, invoiceNumberX, leftHeaderY + 15, { width: 200, align: 'right' })
         .fillColor('#000000')
 
-      const contentStartY = headerY + 40
+      const contentStartY = headerY + headerHeight + 20
 
-      // Invoice details box (left side) - matching preview layout
+      // Invoice details (left side) - matching preview layout (no border)
       const detailsY = contentStartY
       const boxWidth = 200
-      const boxHeight = 90
       doc
-        .rect(50, detailsY, boxWidth, boxHeight)
-        .stroke()
         .fontSize(9)
         .fillColor('#666666')
-        .text('Invoice Number', 60, detailsY + 8)
-        .text('Issue Date', 60, detailsY + 28)
-        .text('Due Date', 60, detailsY + 48)
-        .text('Status', 60, detailsY + 68)
+        .text('Issue Date', 50, detailsY)
+        .text('Due Date', 50, detailsY + 20)
         .fillColor('#000000')
         .fontSize(10)
-        .font(defaultFont.includes('Bold') ? defaultFont : `${defaultFont}-Bold`)
-        .text(invoice.invoiceNumber, 60, detailsY + 18, { width: boxWidth - 20 })
         .font(defaultFont)
-        .fontSize(10)
-        .text(formatDateForPdf(invoice.issueDate), 60, detailsY + 38, { width: boxWidth - 20 })
-        .text(formatDateForPdf(invoice.dueDate), 60, detailsY + 58, { width: boxWidth - 20 })
-        .text(invoice.status, 60, detailsY + 78, { width: boxWidth - 20 })
+        .text(formatDateForPdf(invoice.issueDate), 50, detailsY + 10, { width: boxWidth - 20 })
+        .text(formatDateForPdf(invoice.dueDate), 50, detailsY + 30, { width: boxWidth - 20 })
+
+      // From and Bill To sections - side by side
+      const fromBillToY = detailsY + 50
+      const leftColumnX = 50
+      const rightColumnX = 300
+      const columnWidth = 250
+
+      // From section (left side) - only if enabled
+      if (settings?.enableFrom && (settings?.companyName || settings?.companyAddress || settings?.companyEmail)) {
+        doc
+          .fontSize(12)
+          .font(defaultFont.includes('Bold') ? defaultFont : `${defaultFont}-Bold`)
+          .fillColor(colors.primary)
+          .text('From:', leftColumnX, fromBillToY)
+          .fillColor('#000000')
+          .font(defaultFont)
+          .fontSize(11)
+
+        let fromY = fromBillToY + 15
+        if (settings.companyName) {
+          doc.text(settings.companyName, leftColumnX, fromY)
+          fromY += 15
+        }
+        if (settings.companyEmail) {
+          doc.text(settings.companyEmail, leftColumnX, fromY)
+          fromY += 15
+        }
+        if (settings.companyPhone) {
+          doc.text(settings.companyPhone, leftColumnX, fromY)
+          fromY += 15
+        }
+        if (settings.companyAddress) {
+          doc.text(settings.companyAddress, leftColumnX, fromY, { width: columnWidth })
+        }
+      }
 
       // Bill To section (right side) - matching preview layout
-      const billToX = 300
       doc
         .fontSize(12)
         .font(defaultFont.includes('Bold') ? defaultFont : `${defaultFont}-Bold`)
         .fillColor(colors.primary)
-        .text('Bill To:', billToX, detailsY)
+        .text('Bill To:', rightColumnX, fromBillToY)
         .fillColor('#000000')
         .font(defaultFont)
         .fontSize(11)
-      doc.text(invoice.clientName, billToX, detailsY + 15)
-      doc.text(invoice.clientEmail, billToX, detailsY + 30)
-      doc.text(invoice.clientAddress, billToX, detailsY + 45, { width: 250 })
+      doc.text(invoice.clientName, rightColumnX, fromBillToY + 15)
+      doc.text(invoice.clientEmail, rightColumnX, fromBillToY + 30)
+      doc.text(invoice.clientAddress, rightColumnX, fromBillToY + 45, { width: columnWidth })
 
-      doc.y = detailsY + boxHeight + 20
+      doc.y = fromBillToY + 80
 
       // Custom fields
       if (invoice.customFields) {
@@ -192,9 +290,9 @@ export const generatePdf = async (
         doc.fontSize(10).font(defaultFont)
         doc.text(item.description, 60, y + 5, { width: 230 })
         doc.text(item.quantity.toString(), 300, y + 5, { align: 'center', width: 50 })
-        doc.text(`$${item.unitPrice.toFixed(2)}`, 360, y + 5, { align: 'right', width: 80 })
+        doc.text(formatCurrency(item.unitPrice, settings), 360, y + 5, { align: 'right', width: 80 })
         doc.font(defaultFont.includes('Bold') ? defaultFont : `${defaultFont}-Bold`)
-        doc.text(`$${item.total.toFixed(2)}`, 450, y + 5, { align: 'right', width: 80 })
+        doc.text(formatCurrency(item.total, settings), 450, y + 5, { align: 'right', width: 80 })
         doc.font(defaultFont)
         y += rowHeight
       })
@@ -208,25 +306,25 @@ export const generatePdf = async (
 
       doc.fontSize(10).font(defaultFont)
       doc.text('Subtotal:', totalsX, totalsY, { width: totalsWidth - 100, align: 'left' })
-      doc.text(`$${invoice.subtotal.toFixed(2)}`, totalsX + totalsWidth - 100, totalsY, { width: 100, align: 'right' })
+      doc.text(formatCurrency(invoice.subtotal, settings), totalsX + totalsWidth - 100, totalsY, { width: 100, align: 'right' })
 
       let currentY = totalsY + 15
 
       if (settings?.enableTax !== false && invoice.tax > 0) {
         doc.text('Tax:', totalsX, currentY, { width: totalsWidth - 100, align: 'left' })
-        doc.text(`$${invoice.tax.toFixed(2)}`, totalsX + totalsWidth - 100, currentY, { width: 100, align: 'right' })
+        doc.text(formatCurrency(invoice.tax, settings), totalsX + totalsWidth - 100, currentY, { width: 100, align: 'right' })
         currentY += 15
       }
 
       if (settings?.enableShipping && invoice.shipping > 0) {
         doc.text('Shipping:', totalsX, currentY, { width: totalsWidth - 100, align: 'left' })
-        doc.text(`$${invoice.shipping.toFixed(2)}`, totalsX + totalsWidth - 100, currentY, { width: 100, align: 'right' })
+        doc.text(formatCurrency(invoice.shipping, settings), totalsX + totalsWidth - 100, currentY, { width: 100, align: 'right' })
         currentY += 15
       }
 
       if (settings?.enableDiscount && invoice.discount > 0) {
         doc.text('Discount:', totalsX, currentY, { width: totalsWidth - 100, align: 'left' })
-        doc.text(`-$${invoice.discount.toFixed(2)}`, totalsX + totalsWidth - 100, currentY, { width: 100, align: 'right' })
+        doc.text(`-${formatCurrency(invoice.discount, settings)}`, totalsX + totalsWidth - 100, currentY, { width: 100, align: 'right' })
         currentY += 15
       }
 
@@ -243,21 +341,43 @@ export const generatePdf = async (
         .font(defaultFont.includes('Bold') ? defaultFont : `${defaultFont}-Bold`)
         .fillColor(colors.primary)
         .text('Total:', totalsX, currentY, { width: totalsWidth - 100, align: 'left' })
-        .text(`$${invoice.total.toFixed(2)}`, totalsX + totalsWidth - 100, currentY, { width: 100, align: 'right' })
+        .text(formatCurrency(invoice.total, settings), totalsX + totalsWidth - 100, currentY, { width: 100, align: 'right' })
         .fillColor('#000000')
+
+      // Amount Paid and Balance Due
+      const amountPaid = invoice.amountPaid || 0
+      if (amountPaid > 0) {
+        currentY += 20
+        doc
+          .fontSize(10)
+          .font(defaultFont)
+          .text('Amount Paid:', totalsX, currentY, { width: totalsWidth - 100, align: 'left' })
+          .fillColor('#22c55e')
+          .text(formatCurrency(amountPaid, settings), totalsX + totalsWidth - 100, currentY, { width: 100, align: 'right' })
+          .fillColor('#000000')
+
+        const balanceDue = invoice.total - amountPaid
+        currentY += 15
+        doc
+          .fontSize(11)
+          .font(defaultFont.includes('Bold') ? defaultFont : `${defaultFont}-Bold`)
+          .text('Balance Due:', totalsX, currentY, { width: totalsWidth - 100, align: 'left' })
+          .fillColor(balanceDue > 0 ? '#dc2626' : '#22c55e')
+          .text(formatCurrency(balanceDue, settings), totalsX + totalsWidth - 100, currentY, { width: 100, align: 'right' })
+          .fillColor('#000000')
+      }
 
       doc.y = currentY + 20
 
       // Get page dimensions (used for signature, watermark and timestamp)
-      const pageWidth = doc.page.width
+      // Note: pageWidth and margin already declared in header section
       const pageHeight = doc.page.height
-      const margin = 50
 
       // Notes, Terms & Signature - side by side layout
       const notesTermsY = doc.y
       const leftColumnWidth = 280 // Width for notes and terms
       const rightColumnWidth = 270 // Width for signature
-      const rightColumnX = pageWidth - margin - rightColumnWidth
+      const signatureColumnX = pageWidth - margin - rightColumnWidth
 
       // Left column: Notes and Terms
       let leftColumnY = notesTermsY
@@ -272,7 +392,7 @@ export const generatePdf = async (
           .fillColor('#000000')
           .font(defaultFont)
         doc.fontSize(10)
-        const notesText = invoice.notes || settings.defaultNotes || ''
+        const notesText = invoice.notes || (settings?.defaultNotes || '')
         const notesHeight = doc.heightOfString(notesText, { width: leftColumnWidth - 10 })
         doc.text(notesText, margin, leftColumnY + 15, { width: leftColumnWidth - 10 })
         leftColumnY += notesHeight + 25
@@ -288,7 +408,7 @@ export const generatePdf = async (
           .fillColor('#000000')
           .font(defaultFont)
         doc.fontSize(10)
-        const termsText = invoice.terms || settings.defaultTerms || ''
+        const termsText = invoice.terms || (settings?.defaultTerms || '')
         const termsHeight = doc.heightOfString(termsText, { width: leftColumnWidth - 10 })
         doc.text(termsText, margin, leftColumnY + 15, { width: leftColumnWidth - 10 })
         leftColumnY += termsHeight + 25
@@ -313,11 +433,11 @@ export const generatePdf = async (
 
             if (isUrl) {
               // URL - show placeholder (in production, fetch and convert to buffer)
-              doc.rect(rightColumnX, finalSignatureY, signatureWidth, 50)
+              doc.rect(signatureColumnX, finalSignatureY, signatureWidth, 50)
                 .stroke()
                 .fontSize(8)
                 .fillColor('#999999')
-                .text('Signature Image\n(URL)', rightColumnX, finalSignatureY + 15, {
+                .text('Signature Image\n(URL)', signatureColumnX, finalSignatureY + 15, {
                   width: signatureWidth,
                   align: 'center'
                 })
@@ -325,18 +445,18 @@ export const generatePdf = async (
             } else {
               // File path - try to load image
               try {
-                doc.image(settings.signatureImageUrl, rightColumnX, finalSignatureY, {
+                doc.image(settings.signatureImageUrl, signatureColumnX, finalSignatureY, {
                   width: signatureWidth,
                   height: 50,
                   fit: [signatureWidth, 50]
                 })
               } catch (imageError) {
                 // If image loading fails, show placeholder
-                doc.rect(rightColumnX, finalSignatureY, signatureWidth, 50)
+                doc.rect(signatureColumnX, finalSignatureY, signatureWidth, 50)
                   .stroke()
                   .fontSize(8)
                   .fillColor('#999999')
-                  .text('Signature Image', rightColumnX, finalSignatureY + 20, {
+                  .text('Signature Image', signatureColumnX, finalSignatureY + 20, {
                     width: signatureWidth,
                     align: 'center'
                   })
@@ -346,11 +466,11 @@ export const generatePdf = async (
             finalSignatureY += 55
           } catch (error) {
             // If image loading fails, show placeholder
-            doc.rect(rightColumnX, finalSignatureY, signatureWidth, 50)
+            doc.rect(signatureColumnX, finalSignatureY, signatureWidth, 50)
               .stroke()
               .fontSize(8)
               .fillColor('#999999')
-              .text('Signature Image', rightColumnX, finalSignatureY + 20, {
+              .text('Signature Image', signatureColumnX, finalSignatureY + 20, {
                 width: signatureWidth,
                 align: 'center'
               })
@@ -360,8 +480,8 @@ export const generatePdf = async (
         } else {
           // Draw signature line if no image
           const lineY = finalSignatureY + 20
-          doc.moveTo(rightColumnX, lineY)
-            .lineTo(rightColumnX + signatureWidth, lineY)
+          doc.moveTo(signatureColumnX, lineY)
+            .lineTo(signatureColumnX + signatureWidth, lineY)
             .stroke()
           finalSignatureY += 30
         }
@@ -371,7 +491,7 @@ export const generatePdf = async (
           doc.fontSize(10)
             .font(defaultFont)
             .fillColor('#000000')
-            .text(settings.signatureText, rightColumnX, finalSignatureY, {
+            .text(settings.signatureText, signatureColumnX, finalSignatureY, {
               width: signatureWidth,
               align: 'right'
             })
@@ -380,7 +500,7 @@ export const generatePdf = async (
           // Default text if no signature text provided
           doc.fontSize(9)
             .fillColor('#666666')
-            .text('Authorized Signature', rightColumnX, finalSignatureY, {
+            .text('Authorized Signature', signatureColumnX, finalSignatureY, {
               width: signatureWidth,
               align: 'right'
             })
@@ -407,11 +527,15 @@ export const generatePdf = async (
         doc.translate(pageWidth / 2, pageHeight / 2)
         doc.rotate(-45)
 
-        // Set watermark properties with opacity
+        // Set watermark properties with opacity (using lighter color for 20% opacity effect)
+        const watermarkR = Math.round((rgb[0] * 0.2 + 0.8) * 255)
+        const watermarkG = Math.round((rgb[1] * 0.2 + 0.8) * 255)
+        const watermarkB = Math.round((rgb[2] * 0.2 + 0.8) * 255)
+        const watermarkHex = `#${watermarkR.toString(16).padStart(2, '0')}${watermarkG.toString(16).padStart(2, '0')}${watermarkB.toString(16).padStart(2, '0')}`
         doc
           .fontSize(watermarkSize)
           .font(defaultFont)
-          .fillColor(rgb[0], rgb[1], rgb[2], 0.2) // 20% opacity for watermark
+          .fillColor(watermarkHex)
 
         // Calculate text width for centering
         const textWidth = doc.widthOfString(watermarkText)
@@ -430,7 +554,6 @@ export const generatePdf = async (
 
       // Format current date and time with timezone
       const now = new Date()
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
       const timezoneOffset = -now.getTimezoneOffset()
       const offsetHours = Math.floor(Math.abs(timezoneOffset) / 60)
       const offsetMinutes = Math.abs(timezoneOffset) % 60

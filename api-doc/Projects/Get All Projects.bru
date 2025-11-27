@@ -1,0 +1,48 @@
+meta {
+  name: Get All Projects
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/projects?clientId=
+  body: none
+  auth: none
+}
+
+params:query {
+  clientId: 
+}
+
+docs {
+  # Get All Projects
+  
+  Retrieve all projects, optionally filtered by client.
+  
+  **Query Parameters:**
+  - `clientId` (string, optional): Filter by client ID
+  
+  **Response:**
+  ```json
+  [
+    {
+      "id": "uuid",
+      "name": "Project Name",
+      "description": "Project description",
+      "clientId": "uuid",
+      "client": {
+        "id": "uuid",
+        "name": "Client Name",
+        "email": "client@example.com"
+      },
+      "status": "ACTIVE",
+      "_count": {
+        "invoices": 5
+      },
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    }
+  ]
+  ```
+}
+

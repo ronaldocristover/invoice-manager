@@ -1,0 +1,43 @@
+meta {
+  name: Get Client By ID
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/clients/:id
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 
+}
+
+docs {
+  # Get Client By ID
+  
+  Retrieve a single client by ID.
+  
+  **Path Parameters:**
+  - `id` (string, required): Client UUID
+  
+  **Response:**
+  ```json
+  {
+    "id": "uuid",
+    "name": "Client Name",
+    "email": "client@example.com",
+    "phone": "+1 (555) 123-4567",
+    "address": "Client Address",
+    "projects": [...],
+    "_count": {
+      "projects": 5,
+      "invoices": 10
+    },
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+  ```
+}
+

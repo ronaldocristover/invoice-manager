@@ -1,0 +1,28 @@
+meta {
+  name: Preview Invoice PDF
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/invoices/:id/preview
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 
+}
+
+docs {
+  # Preview Invoice PDF
+  
+  Generate and preview invoice as PDF in browser.
+  
+  **Path Parameters:**
+  - `id` (string, required): Invoice UUID
+  
+  **Response:** PDF file (application/pdf)
+  - Content-Disposition: inline; filename={filename}.pdf
+}
+

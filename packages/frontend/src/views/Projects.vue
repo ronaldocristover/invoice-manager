@@ -64,7 +64,7 @@
               project.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
             ]"
           >
-            {{ project.status }}
+            {{ formatProjectStatus(project.status) }}
           </span>
         </div>
         <p v-if="project.description" class="text-sm text-gray-600 mb-4 line-clamp-2">
@@ -96,6 +96,13 @@ const selectedClientId = ref<string>('')
 
 const formatDate = (dateString: string): string => {
   return new Date(dateString).toLocaleDateString()
+}
+
+const formatProjectStatus = (status: string): string => {
+  if (status === 'active') {
+    return 'Active'
+  }
+  return 'Not Active'
 }
 
 const fetchProjects = async () => {

@@ -1,0 +1,27 @@
+meta {
+  name: Delete Invoice
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/api/invoices/:id
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 
+}
+
+docs {
+  # Delete Invoice
+  
+  Delete an invoice by ID.
+  
+  **Path Parameters:**
+  - `id` (string, required): Invoice UUID
+  
+  **Response:** 204 No Content
+}
+

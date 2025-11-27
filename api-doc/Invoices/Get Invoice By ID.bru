@@ -1,0 +1,74 @@
+meta {
+  name: Get Invoice By ID
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/invoices/:id
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 
+}
+
+docs {
+  # Get Invoice By ID
+  
+  Retrieve a single invoice by its ID.
+  
+  **Path Parameters:**
+  - `id` (string, required): Invoice UUID
+  
+  **Response:**
+  ```json
+  {
+    "id": "uuid",
+    "invoiceNumber": "INV-0001",
+    "clientId": "uuid",
+    "projectId": "uuid",
+    "clientName": "Client Name",
+    "clientEmail": "client@example.com",
+    "clientAddress": "Client Address",
+    "issueDate": "2024-01-01T00:00:00.000Z",
+    "dueDate": "2024-01-31T00:00:00.000Z",
+    "status": "draft",
+    "items": [
+      {
+        "id": "uuid",
+        "description": "Item description",
+        "quantity": 1,
+        "unitPrice": 1000.00,
+        "total": 1000.00
+      }
+    ],
+    "subtotal": 1000.00,
+    "tax": 100.00,
+    "shipping": 0,
+    "discount": 0,
+    "total": 1100.00,
+    "amountPaid": 0,
+    "notes": null,
+    "terms": null,
+    "logoUrl": "https://example.com/logo.png",
+    "enableTax": true,
+    "enableShipping": false,
+    "enableDiscount": true,
+    "enableSignature": true,
+    "signatureImageUrl": null,
+    "signatureText": "John Doe, Director",
+    "enableFrom": true,
+    "companyName": "Acme Corporation",
+    "companyAddress": "123 Business Street",
+    "companyEmail": "billing@acmecorp.com",
+    "companyPhone": "+1 (555) 123-4567",
+    "currencyFormat": "USD",
+    "currencySymbol": "$",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+  ```
+}
+

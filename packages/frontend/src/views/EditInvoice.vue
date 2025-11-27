@@ -276,28 +276,54 @@
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
+                <div class="md:col-span-1">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Amount Paid ($)
+                  </label>
+                  <input
+                    v-model.number="form.amountPaid"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p class="mt-1 text-xs text-gray-500">
+                    Amount already paid for this invoice
+                  </p>
+                </div>
               </div>
               <div class="mt-4 p-4 bg-gray-50 rounded-lg">
                 <div class="space-y-2">
                   <div class="flex justify-between text-sm">
                     <span class="text-gray-600">Subtotal:</span>
-                    <span class="font-medium text-gray-900">${{ subtotal.toFixed(2) }}</span>
+                    <span class="font-medium text-gray-900">${{ (isNaN(subtotal) ? 0 : subtotal).toFixed(2) }}</span>
                   </div>
                   <div v-if="taxAmount > 0" class="flex justify-between text-sm">
                     <span class="text-gray-600">Tax:</span>
-                    <span class="font-medium text-gray-900">${{ taxAmount.toFixed(2) }}</span>
+                    <span class="font-medium text-gray-900">${{ (isNaN(taxAmount) ? 0 : taxAmount).toFixed(2) }}</span>
                   </div>
                   <div v-if="form.shipping && form.shipping > 0" class="flex justify-between text-sm">
                     <span class="text-gray-600">Shipping:</span>
-                    <span class="font-medium text-gray-900">${{ (form.shipping || 0).toFixed(2) }}</span>
+                    <span class="font-medium text-gray-900">${{ (isNaN(form.shipping) ? 0 : (form.shipping || 0)).toFixed(2) }}</span>
                   </div>
                   <div v-if="form.discount && form.discount > 0" class="flex justify-between text-sm">
                     <span class="text-gray-600">Discount:</span>
-                    <span class="font-medium text-gray-900">-${{ (form.discount || 0).toFixed(2) }}</span>
+                    <span class="font-medium text-gray-900">-${{ (isNaN(form.discount) ? 0 : (form.discount || 0)).toFixed(2) }}</span>
                   </div>
                   <div class="flex justify-between text-lg font-bold pt-2 border-t border-gray-300">
                     <span>Total:</span>
-                    <span class="text-blue-600">${{ total.toFixed(2) }}</span>
+                    <span class="text-blue-600">${{ (isNaN(total) ? 0 : total).toFixed(2) }}</span>
+                  </div>
+                  <div v-if="(form.amountPaid || 0) > 0" class="flex justify-between text-sm pt-2 border-t border-gray-200">
+                    <span class="text-gray-600">Amount Paid:</span>
+                    <span class="text-green-600 font-medium">${{ (isNaN(form.amountPaid) ? 0 : (form.amountPaid || 0)).toFixed(2) }}</span>
+                  </div>
+                  <div v-if="(form.amountPaid || 0) > 0" class="flex justify-between text-sm font-semibold pt-2">
+                    <span class="text-gray-700">Balance Due:</span>
+                    <span :class="(total - (form.amountPaid || 0)) > 0 ? 'text-red-600' : 'text-green-600'">
+                      ${{ (isNaN(total - (form.amountPaid || 0)) ? 0 : (total - (form.amountPaid || 0))).toFixed(2) }}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -426,6 +452,7 @@ const form = ref<{
   tax: number
   shipping?: number
   discount?: number
+  amountPaid?: number
   notes?: string
   terms?: string
 }>({
@@ -448,6 +475,7 @@ const form = ref<{
   tax: 0,
   shipping: 0,
   discount: 0,
+  amountPaid: 0,
   notes: '',
   terms: ''
 })
@@ -492,24 +520,41 @@ const previewData = computed(() => ({
   enableDiscount: settings.value?.enableDiscount,
   enableSignature: settings.value?.enableSignature,
   signatureImageUrl: settings.value?.signatureImageUrl,
-  signatureText: settings.value?.signatureText
+  signatureText: settings.value?.signatureText,
+  enableFrom: settings.value?.enableFrom,
+  companyName: settings.value?.companyName,
+  companyAddress: settings.value?.companyAddress,
+  companyEmail: settings.value?.companyEmail,
+  companyPhone: settings.value?.companyPhone
 }))
 
 const subtotal = computed(() => {
-  return form.value.items.reduce(
-    (sum, item) => sum + item.quantity * item.unitPrice,
+  if (!form.value.items || form.value.items.length === 0) return 0
+  const result = form.value.items.reduce(
+    (sum, item) => {
+      const quantity = Number(item.quantity) || 0
+      const unitPrice = Number(item.unitPrice) || 0
+      const itemTotal = quantity * unitPrice
+      return sum + (isNaN(itemTotal) ? 0 : itemTotal)
+    },
     0
   )
+  return isNaN(result) ? 0 : result
 })
 
 const taxAmount = computed(() => {
-  return (subtotal.value * form.value.tax) / 100
+  const tax = Number(form.value.tax) || 0
+  const result = (subtotal.value * tax) / 100
+  return isNaN(result) ? 0 : result
 })
 
 const total = computed(() => {
-  const shipping = form.value.shipping || 0
-  const discount = form.value.discount || 0
-  return subtotal.value + taxAmount.value + shipping - discount
+  const shipping = Number(form.value.shipping) || 0
+  const discount = Number(form.value.discount) || 0
+  const shippingValue = isNaN(shipping) ? 0 : shipping
+  const discountValue = isNaN(discount) ? 0 : discount
+  const result = subtotal.value + taxAmount.value + shippingValue - discountValue
+  return isNaN(result) ? 0 : result
 })
 
 const addItem = () => {
@@ -564,13 +609,14 @@ const loadInvoice = async () => {
       dueDate: invoice.dueDate.split('T')[0],
       status: invoice.status,
       items: invoice.items.map((item) => ({
-        description: item.description,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice
+        description: item.description || '',
+        quantity: Number(item.quantity) || 0,
+        unitPrice: Number(item.unitPrice) || 0
       })),
-      tax: taxPercentage,
-      shipping: invoice.shipping || 0,
-      discount: invoice.discount || 0,
+      tax: isNaN(taxPercentage) ? 0 : taxPercentage,
+      shipping: Number(invoice.shipping) || 0,
+      discount: Number(invoice.discount) || 0,
+      amountPaid: Number(invoice.amountPaid) || 0,
       notes: invoice.notes || '',
       terms: invoice.terms || ''
     }
@@ -609,6 +655,7 @@ const handleSubmit = async () => {
       tax: form.value.tax,
       shipping: form.value.shipping,
       discount: form.value.discount,
+      amountPaid: form.value.amountPaid,
       notes: form.value.notes,
       terms: form.value.terms
     }
